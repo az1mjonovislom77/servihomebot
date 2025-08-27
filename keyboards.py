@@ -7,8 +7,8 @@ from aiogram.types import (
 
 REGIONS = {
     'Toshkent viloyati': ['Toshkent sh.', 'Chirchiq', 'Angren', 'Olmaliq'],
-    'Samarqand viloyati': ['Samarqand sh', 'Kattaqo‘rg‘on'],
-    'Farg‘ona viloyati': ['Farg‘ona sh.', 'Qo‘qon', 'Marg‘ilon'],
+    'Samarqand viloyati': ['Samarqand sh', 'Kattaqorgon'],
+    'Fargona viloyati': ['Fargona sh.', 'Qoqon', 'Margilon'],
     'Andijon viloyati': ['Andijon sh.', 'Asaka', 'Shahrikhon'],
     'Namangan viloyati': ['Namangan sh.', 'Chortoq', 'Chust'],
     'Buxoro viloyati': ['Buxoro sh.', 'Kogon'],
@@ -16,7 +16,7 @@ REGIONS = {
     'Qashqadaryo viloyati': ['Qarshi', 'Shahrisabz'],
     'Surxondaryo viloyati': ['Termiz', 'Denov'],
     'Xorazm viloyati': ['Urganch', 'Xiva'],
-    'Qoraqalpog‘iston': ['Nukus', 'Taxiatosh']
+    'Qoraqalpogiston': ['Nukus', 'Taxiatosh']
 }
 
 SERVICES = [
@@ -40,6 +40,7 @@ def start_keyboard():
         ],
         resize_keyboard=True
     )
+
 
 
 def phone_request_keyboard():
@@ -108,7 +109,7 @@ def remove_keyboard():
 
 def skip_keyboard():
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text='⏭ O‘tkazib yuborish')]],
+        keyboard=[[KeyboardButton(text='⏭ Otkazib yuborish')]],
         resize_keyboard=True, one_time_keyboard=True
     )
 
@@ -123,7 +124,7 @@ def worker_actions_keyboard(order_id: int):
     )
 
 def choose_worker_keyboard(worker_id: int, order_id: int, price: str | None = None):
-    label = '✅ Tanlash' if not price else f'✅ Tanlash ({price} so‘m)'
+    label = '✅ Tanlash' if not price else f'✅ Tanlash ({price} som)'
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -145,7 +146,7 @@ def admin_worker_keyboard(worker_id: int, approved: bool):
         ]
     else:
         keyboard = [
-            [InlineKeyboardButton(text='🗑 Ishdan bo‘shatish', callback_data=f'fire_worker:{worker_id}')]
+            [InlineKeyboardButton(text='🗑 Ishdan boshatish', callback_data=f'fire_worker:{worker_id}')]
         ]
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -174,7 +175,7 @@ def worker_panel_keyboard():
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text='🔧 Profilni tahrirlash')],
-            [KeyboardButton(text='🗑 Profilni o‘chirish')]
+            [KeyboardButton(text='🗑 Profilni ochirish')]
         ],
         resize_keyboard=True
     )

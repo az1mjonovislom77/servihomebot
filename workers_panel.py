@@ -62,7 +62,7 @@ def register_worker_handlers(
 
     async def on_worker_region(message: Message, state: FSMContext):
         if message.text not in REGIONS:
-            await message.answer('⚠️ Ro‘yxatdan viloyat tanlang', reply_markup=regions_keyboard())
+            await message.answer('⚠️ Royxatdan viloyat tanlang', reply_markup=regions_keyboard())
             return
         workers_db[message.from_user.id]["region"] = message.text
         async with pool.acquire() as conn:
@@ -74,7 +74,7 @@ def register_worker_handlers(
     async def on_worker_city(message: Message, state: FSMContext):
         region = workers_db.get(message.from_user.id, {}).get('region')
         if message.text not in (REGIONS.get(region) or []):
-            await message.answer('⚠️ Ro‘yxatdan shahar tanlang', reply_markup=cities_keyboard(region))
+            await message.answer('⚠️ Royxatdan shahar tanlang', reply_markup=cities_keyboard(region))
             return
         workers_db[message.from_user.id]['city'] = message.text
         async with pool.acquire() as conn:
@@ -85,7 +85,7 @@ def register_worker_handlers(
 
     async def on_worker_profession(message: Message, state: FSMContext):
         if message.text not in SERVICES:
-            await message.answer('⚠️ Ro‘yxatdan kasbni tanlang', reply_markup=services_keyboard())
+            await message.answer('⚠️ Royxatdan kasbni tanlang', reply_markup=services_keyboard())
             return
         workers_db[message.from_user.id]['profession'] = message.text
         workers_db[message.from_user.id]['approved'] = False
@@ -112,9 +112,9 @@ def register_worker_handlers(
     async def on_worker_edit_profile(message: Message, state: FSMContext):
         worker = workers_db.get(message.from_user.id)
         if not worker:
-            await message.answer('⚠️ Siz hali ro‘yxatdan o‘tmagansiz')
+            await message.answer('⚠️ Siz hali royxatdan otmagansiz')
             return
-        await message.answer('✍️ Qaysi ma’lumotni o‘zgartirmoqchisiz?', reply_markup=edit_profile_keyboard())
+        await message.answer('✍️ Qaysi ma’lumotni ozgartirmoqchisiz?', reply_markup=edit_profile_keyboard())
     dp.message.register(on_worker_edit_profile, F.text == '🔧 Profilni tahrirlash')
 
     async def edit_name_handler(m: Message, state: FSMContext):
@@ -148,7 +148,7 @@ def register_worker_handlers(
 
     async def on_worker_edit_region(message: Message, state: FSMContext):
         if message.text not in REGIONS:
-            await message.answer('⚠️ Ro‘yxatdan viloyat tanlang', reply_markup=regions_keyboard())
+            await message.answer('⚠️ Royxatdan viloyat tanlang', reply_markup=regions_keyboard())
             return
         workers_db[message.from_user.id]['region'] = message.text
         async with pool.acquire() as conn:
@@ -160,7 +160,7 @@ def register_worker_handlers(
     async def on_worker_edit_city(message: Message, state: FSMContext):
         region = workers_db.get(message.from_user.id, {}).get('region')
         if message.text not in (REGIONS.get(region) or []):
-            await message.answer('⚠️ Ro‘yxatdan shahar tanlang', reply_markup=cities_keyboard(region))
+            await message.answer('⚠️ Royxatdan shahar tanlang', reply_markup=cities_keyboard(region))
             return
         workers_db[message.from_user.id]["city"] = message.text
         async with pool.acquire() as conn:
@@ -171,7 +171,7 @@ def register_worker_handlers(
 
     async def on_worker_edit_profession(message: Message, state: FSMContext):
         if message.text not in SERVICES:
-            await message.answer('⚠️ Ro‘yxatdan kasbni tanlang', reply_markup=services_keyboard())
+            await message.answer('⚠️ Royxatdan kasbni tanlang', reply_markup=services_keyboard())
             return
         workers_db[message.from_user.id]['profession'] = message.text
         async with pool.acquire() as conn:
@@ -188,16 +188,16 @@ def register_worker_handlers(
                 await delete_worker(conn, user_id)
             await state.clear()
             markup = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='/start')]], resize_keyboard=True)
-            await message.answer('🗑 Profilingiz o‘chirildi', reply_markup=markup)
+            await message.answer('🗑 Profilingiz ochirildi', reply_markup=markup)
         else:
             await message.answer('⚠️ Profil topilmadi')
-    dp.message.register(on_worker_delete_profile, F.text == '🗑 Profilni o‘chirish')
+    dp.message.register(on_worker_delete_profile, F.text == '🗑 Profilni ochirish')
 
     async def ask_price(callback: CallbackQuery, state: FSMContext):
         order_id = int(callback.data.split(":")[1])
         await state.set_state(OfferStates.waiting_price)
         await state.update_data(order_id=order_id)
-        await callback.message.answer('💰 Taklif qiladigan narxni yozing (so‘mda):')
+        await callback.message.answer('💰 Taklif qiladigan narxni yozing (somda):')
         await callback.answer()
     dp.callback_query.register(ask_price, F.data.startswith("set_price:"))
 
@@ -217,6 +217,6 @@ def register_worker_handlers(
         offers[order_id][message.from_user.id] = price
         async with pool.acquire() as conn:
             await save_offer(conn, order_id, message.from_user.id, price)
-        await message.answer(f'✅ Sizning {price} so‘mlik taklifingiz saqlandi. Endi qabul qilish tugmasini bosing.')
+        await message.answer(f'✅ Sizning {price} somlik taklifingiz saqlandi. Endi qabul qilish tugmasini bosing.')
         await state.clear()
     dp.message.register(save_price, OfferStates.waiting_price)

@@ -100,7 +100,7 @@ async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders
             'budget': row['budget'],
             'location': (row['latitude'], row['longitude']),
             'chosen_worker': row['chosen_worker'],
-            'workers_accepted': set(),  # yangi maydon ishchilar qabul qilganlarini saqlash uchun
+            'workers_accepted': set(),
             'media': {'type': row['media_type'], 'file_id': row['media_file_id']} if row.get('media_type') else None
         }
         if row['chosen_worker'] is not None:

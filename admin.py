@@ -42,7 +42,7 @@ async def feedback_text(
             )
         except:
             await message.answer(
-                '⚠️ Ishchiga feedback yuborib bo‘lmadi (u botni bloklagan bo‘lishi mumkin)'
+                '⚠️ Ishchiga feedback yuborib bolmadi (u botni bloklagan bolishi mumkin)'
             )
     else:
         await message.answer('⚠️ Bu ishchi topilmadi')
@@ -82,13 +82,13 @@ def register_admin_handlers(
         if not is_admin(message):
             return
         if not workers_db:
-            await message.answer('👷 Ishchilar ro‘yxati bo‘sh')
+            await message.answer('👷 Ishchilar royxati bosh')
             return
         for worker_id, data in workers_db.items():
             user = await bot.get_chat(worker_id)
             text = (
                 '👷 Ishchi ma’lumoti\n'
-                f'Foydalanuvchi: {user.username or 'username yo‘q'}\n'
+                f'Foydalanuvchi: {user.username or 'username yoq'}\n'
                 f'Ismi: {data.get('name','')}\n'
                 f'Telefon: {data.get('phone','N/A')}\n'
                 f'Manzil: {data.get('region','')}/{data.get('city','')}\n'
@@ -105,7 +105,7 @@ def register_admin_handlers(
             return
 
         if not users_db:
-            await message.answer('👤 Userlar ro‘yxati bo‘sh')
+            await message.answer('👤 Userlar royxati bosh')
             return
 
 
@@ -113,7 +113,7 @@ def register_admin_handlers(
         for user_id, data in users_db.items():
             try:
                 user = await bot.get_chat(user_id)
-                username = f'@{user.username}' if user.username else 'username yo‘q'
+                username = f'@{user.username}' if user.username else 'username yoq'
                 phone = data.get('phone', 'N/A')
 
                 txt.append(
@@ -170,7 +170,7 @@ def register_admin_handlers(
             return
 
         if not blocked_users:
-            await message.answer('♻ Bloklangan userlar yo‘q\n\n'
+            await message.answer('♻ Bloklangan userlar yoq\n\n'
                                  'Block va Unblock qilish uchun korsatilgani kabi yozing‼️ \n'
                                  '/block username\n'
                                  '/unblock username\n')
@@ -223,13 +223,13 @@ def register_admin_handlers(
             async with pool.acquire() as conn:
                 await delete_worker(conn, worker_id)
             await bot.send_message(worker_id, '❌ Admin arizangizni rad etdi')
-            await call.message.edit_text('❌ Ishchi rad etildi va o‘chirildi')
+            await call.message.edit_text('❌ Ishchi rad etildi va ochirildi')
         elif action == 'fire_worker':
             workers_db.pop(worker_id, None)
             async with pool.acquire() as conn:
                 await delete_worker(conn, worker_id)
-            await bot.send_message(worker_id, '🗑 Siz ishdan bo‘shatildingiz')
-            await call.message.edit_text('🗑 Ishchi ishdan bo‘shatildi')
+            await bot.send_message(worker_id, '🗑 Siz ishdan boshatildingiz')
+            await call.message.edit_text('🗑 Ishchi ishdan boshatildi')
 
         await call.answer()
 
@@ -244,7 +244,7 @@ def register_admin_handlers(
         admins.add(new_admin_id)
         async with pool.acquire() as conn:
             await add_admin(conn, new_admin_id)
-        await message.answer(f'✅ Admin {new_admin_id} qo‘shildi')
+        await message.answer(f'✅ Admin {new_admin_id} qoshildi')
 
     async def remove_admin_cmd(message: types.Message):
         if not is_admin(message):
@@ -258,7 +258,7 @@ def register_admin_handlers(
             admins.remove(remove_admin_id)
             async with pool.acquire() as conn:
                 await remove_admin(conn, remove_admin_id)
-            await message.answer(f'✅ Admin {remove_admin_id} o‘chirildi')
+            await message.answer(f'✅ Admin {remove_admin_id} ochirildi')
         else:
             await message.answer('⚠️ Bu admin topilmadi')
 

@@ -31,7 +31,7 @@ class AdminFeedback(StatesGroup):
 
 
 def _safe_username(obj: Message | CallbackQuery) -> str:
-    return obj.from_user.username or 'username yo‘q'
+    return obj.from_user.username or 'username yoq'
 
 
 def register_user_handlers(
@@ -81,7 +81,7 @@ def register_user_handlers(
             await message.answer('✍️ Ism-familiyangizni yozing:', reply_markup=remove_keyboard())
             return
         if message.text not in REGIONS:
-            await message.answer('⚠️ Ro‘yxatdan viloyat tanlang', reply_markup=regions_keyboard())
+            await message.answer('⚠️ Royxatdan viloyat tanlang', reply_markup=regions_keyboard())
             return
         await state.update_data(region=message.text)
         await message.answer('🏙 Shaharni tanlang:', reply_markup=cities_keyboard(message.text))
@@ -100,7 +100,7 @@ def register_user_handlers(
             await message.answer('🌆 Viloyatni tanlang:', reply_markup=regions_keyboard())
             return
         if message.text not in (REGIONS.get(region) or []):
-            await message.answer('⚠️ Ro‘yxatdan shahar tanlang', reply_markup=cities_keyboard(region))
+            await message.answer('⚠️ Royxatdan shahar tanlang', reply_markup=cities_keyboard(region))
             return
         await state.update_data(city=message.text)
         await message.answer('🛠 Xizmat turini tanlang:', reply_markup=services_keyboard())
@@ -118,7 +118,7 @@ def register_user_handlers(
             await message.answer('🏙 Shaharni tanlang:', reply_markup=cities_keyboard(data.get('region')))
             return
         if message.text not in SERVICES:
-            await message.answer('⚠️ Ro‘yxatdan xizmat turini tanlang', reply_markup=services_keyboard())
+            await message.answer('⚠️ Royxatdan xizmat turini tanlang', reply_markup=services_keyboard())
             return
         await state.update_data(service=message.text)
         await message.answer('📝 Nima ish qilinishi kerakligini batafsil yozing:', reply_markup=remove_keyboard())
@@ -137,7 +137,7 @@ def register_user_handlers(
         data = await state.get_data()
         media_list = data.get('media', [])
 
-        if message.text == '⏭ O‘tkazib yuborish':
+        if message.text == '⏭ Otkazib yuborish':
             await state.update_data(media=media_list[:MAX_FILES])
             await state.set_state(UserOrder.budget)
             await message.answer("💵 Qancha pul berishga tayyorsiz? (faqat raqam)", reply_markup=remove_keyboard())
@@ -204,7 +204,7 @@ def register_user_handlers(
             f'Manzil: {data["region"]} / {data["city"]}\n'
             f'Xizmat: {data["service"]}\n'
             f'Tavsif: {data["description"]}\n'
-            f'Budjet: {data["budget"]} so‘m\n'
+            f'Budjet: {data["budget"]} som\n'
         )
         markup = location_button(data['location'][0], data['location'][1])
 
@@ -277,7 +277,7 @@ def register_user_handlers(
                 f'User: @{_safe_username(message)}\n'
                 f'Hudud: {data['region']} / {data['city']}\n'
                 f'Xizmat: {data['service']}\n'
-                f'Budjet: {data['budget']} so‘m\n'
+                f'Budjet: {data['budget']} som\n'
                 f'Tavsif: {data['description']}\n'
                 f'Nomer: {user_phone}\n'
             )
@@ -363,7 +363,7 @@ def register_user_handlers(
                     f'🆕 Yangi buyurtma!\n'
                     f'Hudud: {order['region']} / {order['city']}\n'
                     f'Xizmat: {order['service']}\n'
-                    f'Budjet: {order['budget']} so‘m\n'
+                    f'Budjet: {order['budget']} som\n'
                     f'Tavsif: {order['description']}\n'
                     f'Buyurtmachi: {order['name']}\n'
                 )
@@ -374,7 +374,7 @@ def register_user_handlers(
                     if order.get('media'):
                         media_list = order['media']
 
-                        if len(media_list) > 1:  # Bir nechta fayl bo‘lsa
+                        if len(media_list) > 1:  # Bir nechta fayl bolsa
                             album = []
                             for i, m in enumerate(media_list):
                                 caption = notif_text if i == 0 else None
@@ -389,7 +389,7 @@ def register_user_handlers(
                                 await bot.send_media_group(worker_id, album)
                                 await bot.send_message(worker_id, "📍 Joylashuvi:", reply_markup=full_markup)
 
-                        else:  # Faqat 1 ta fayl bo‘lsa
+                        else:  # Faqat 1 ta fayl bolsa
                             m = media_list[0]
                             if m['type'] == 'photo':
                                 await bot.send_photo(worker_id, m['file_id'], caption=notif_text,
@@ -403,7 +403,7 @@ def register_user_handlers(
                             else:
                                 await bot.send_message(worker_id, notif_text, reply_markup=full_markup)
 
-                    else:  # Fayl bo‘lmasa
+                    else:  # Fayl bolmasa
                         await bot.send_message(worker_id, notif_text, reply_markup=full_markup)
                 await bot.send_message(order['user_id'], '✅ Buyurtmangiz tasdiqlandi va ishchilarga yuborildi')
             await callback.answer('✅ Buyurtma ishchilarga yuborildi', show_alert=True)
@@ -452,7 +452,7 @@ def register_user_handlers(
 
         worker = workers_db.get(worker_id)
         if not worker:
-            await callback.answer('❌ Siz ro‘yxatdan o‘tmagansiz', show_alert=True)
+            await callback.answer('❌ Siz royxatdan otmagansiz', show_alert=True)
             return
 
         price = offers.get(order_id, {}).get(worker_id) or order['budget']
@@ -464,7 +464,7 @@ def register_user_handlers(
             f'👤 Ism: {worker['name']}\n'
             f'📍 Hudud: {worker['region']}, {worker['city']}\n'
             f'🔧 Kasb: {worker['profession']}\n'
-            f'💰 Taklif narxi: {price} so‘m\n'
+            f'💰 Taklif narxi: {price} som\n'
         )
         await bot.send_message(
             order['user_id'],
@@ -475,7 +475,7 @@ def register_user_handlers(
         for admin_id in admins:
             await bot.send_message(
                 admin_id,
-                f'📢 Ishchi @{worker.get('username', 'yo‘q')} buyurtma #{order_id} ni qabul qildi'
+                f'📢 Ishchi @{worker.get('username', 'yoq')} buyurtma #{order_id} ni qabul qildi'
             )
 
         await callback.answer('✅ Buyurtma qabul qilindi')
@@ -513,20 +513,20 @@ def register_user_handlers(
             user_id,
             f'✅ Siz {worker['name']} ni tanladingiz!\n\n'
             f'📱 Telefon: {worker['phone']}\n'
-            f'🔗 Username: @{worker.get('username', 'yo‘q')}'
+            f'🔗 Username: @{worker.get('username', 'yoq')}'
         )
 
         await bot.send_message(
             worker_id,
             f'✅ Sizni {order['name']} tanladi!\n\n'
             f'📱 Telefon: {user['phone']}\n'
-            f'🔗 Username: @{order.get('username', 'yo‘q')}'
+            f'🔗 Username: @{order.get('username', 'yoq')}'
         )
 
         for admin_id in admins:
             await bot.send_message(
                 admin_id,
-                f'📢 Buyurtma #{order_id} da ishchi @{worker.get('username', 'yo‘q')} tanlandi'
+                f'📢 Buyurtma #{order_id} da ishchi @{worker.get('username', 'yoq')} tanlandi'
             )
 
         await callback.answer('✅ Ishchi tanlandi')
