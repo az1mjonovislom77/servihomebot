@@ -91,7 +91,7 @@ def register_admin_handlers(
                 f"Foydalanuvchi: {user.username or 'username yoq'}\n"
                 f"Ismi: {data.get('name')}\n"
                 f"Telefon: {data.get('phone','N/A')}\n"
-                f"Manzil: {data.get('region')}/{data.get("city")}\n"
+                f"Manzil: {data.get('region')}/{data.get('city')}\n"
                 f"Kasb: {data.get('profession')}\n"
                 f"Status: {'Tasdiqlangan' if data.get('approved') else 'Tasdiqlanmagan'}"
             )
