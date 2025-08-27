@@ -511,13 +511,13 @@ def register_user_handlers(
         await bot.send_message(
             user_id,
             f"✅ Siz {worker['name']} ni tanladingiz!\n\n"
-            f"📱 Telefon: {worker["phone"]}\n"
+            f"📱 Telefon: {worker['phone']}\n"
             f"🔗 Username: @{worker.get('username', 'yoq')}"
         )
 
         await bot.send_message(
             worker_id,
-            f"✅ Sizni {order["name"]} tanladi!\n\n"
+            f"✅ Sizni {order['name']} tanladi!\n\n"
             f"📱 Telefon: {user['phone']}\n"
             f"🔗 Username: @{order.get('username', 'yoq')}"
         )
