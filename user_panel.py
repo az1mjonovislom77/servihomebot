@@ -460,7 +460,7 @@ def register_user_handlers(
 
         text = (
             f"👷 Ishchi buyurtmangizni qabul qildi!\n\n"
-            f"👤 Ism: {worker["name"]}\n"
+            f"👤 Ism: {worker['name']}\n"
             f"📍 Hudud: {worker['region']}, {worker['city']}\n"
             f"🔧 Kasb: {worker['profession']}\n"
             f"💰 Taklif narxi: {price} som\n"
