@@ -174,7 +174,6 @@ def register_user_handlers(
                 reply_markup=skip_keyboard(),
             )
         else:
-            # Faqat 1 marta chiqadi
             await message.answer("✅ Maksimal 2 ta fayl qabul qilindi. Endi davom etamiz.")
             await state.set_state(UserOrder.budget)
             await message.answer("💵 Qancha pul berishga tayyorsiz? (faqat raqam)", reply_markup=remove_keyboard())
@@ -361,11 +360,11 @@ def register_user_handlers(
             else:
                 notif_text = (
                     f"🆕 Yangi buyurtma!\n"
-                    f"Hudud: {order["region"]} / {order["city"]}\n"
-                    f"Xizmat: {order["service"]}\n"
-                    f"Budjet: {order["budget"]} som\n"
-                    f"Tavsif: {order["description"]}\n"
-                    f"Buyurtmachi: {order["name"]}\n"
+                    f"Hudud: {order['region']} / {order['city']}\n"
+                    f"Xizmat: {order['service']}\n"
+                    f"Budjet: {order['budget']} som\n"
+                    f"Tavsif: {order['description']}\n"
+                    f"Buyurtmachi: {order['name']}\n"
                 )
                 location_markup = location_button(order["location"][0], order["location"][1])
                 action_markup = worker_actions_keyboard(order_id)
@@ -462,8 +461,8 @@ def register_user_handlers(
         text = (
             f"👷 Ishchi buyurtmangizni qabul qildi!\n\n"
             f"👤 Ism: {worker["name"]}\n"
-            f"📍 Hudud: {worker["region"]}, {worker["city"]}\n"
-            f"🔧 Kasb: {worker["profession"]}\n"
+            f"📍 Hudud: {worker['region']}, {worker['city']}\n"
+            f"🔧 Kasb: {worker['profession']}\n"
             f"💰 Taklif narxi: {price} som\n"
         )
         await bot.send_message(
@@ -475,7 +474,7 @@ def register_user_handlers(
         for admin_id in admins:
             await bot.send_message(
                 admin_id,
-                f"📢 Ishchi @{worker.get("username", "yoq")} buyurtma #{order_id} ni qabul qildi"
+                f"📢 Ishchi @{worker.get('username', 'yoq')} buyurtma #{order_id} ni qabul qildi"
             )
 
         await callback.answer("✅ Buyurtma qabul qilindi")
@@ -511,22 +510,22 @@ def register_user_handlers(
 
         await bot.send_message(
             user_id,
-            f"✅ Siz {worker["name"]} ni tanladingiz!\n\n"
+            f"✅ Siz {worker['name']} ni tanladingiz!\n\n"
             f"📱 Telefon: {worker["phone"]}\n"
-            f"🔗 Username: @{worker.get("username", "yoq")}"
+            f"🔗 Username: @{worker.get('username', 'yoq')}"
         )
 
         await bot.send_message(
             worker_id,
             f"✅ Sizni {order["name"]} tanladi!\n\n"
-            f"📱 Telefon: {user["phone"]}\n"
-            f"🔗 Username: @{order.get("username", "yoq")}"
+            f"📱 Telefon: {user['phone']}\n"
+            f"🔗 Username: @{order.get('username', 'yoq')}"
         )
 
         for admin_id in admins:
             await bot.send_message(
                 admin_id,
-                f"📢 Buyurtma #{order_id} da ishchi @{worker.get("username", "yoq")} tanlandi"
+                f"📢 Buyurtma #{order_id} da ishchi @{worker.get('username', 'yoq')} tanlandi"
             )
 
         await callback.answer("✅ Ishchi tanlandi")
