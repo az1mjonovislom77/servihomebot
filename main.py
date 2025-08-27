@@ -2,7 +2,7 @@ import asyncio
 import logging
 from itertools import count
 import asyncpg
-
+import os
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from middlewares import BlockMiddleware
@@ -14,7 +14,7 @@ from database import create_tables, load_from_db
 
 
 API_TOKEN = '8372351670:AAH389RletRBd8eNL2v9a5-tfSF-i_4R33c'
-DSN = 'postgresql://postgres:7777777@localhost/servihome'
+DSN = os.getenv("DATABASE_URL")
 
 logging.basicConfig(level=logging.INFO)
 
