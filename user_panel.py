@@ -198,12 +198,12 @@ def register_user_handlers(
         data = await state.get_data()
         summary = (
             "📦 Buyurtma ma’lumoti:\n"
-            f"FIO: {data["name"]}\n"
+            f"FIO: {data['name']}\n"
             f"Telefon: (tanlangandan keyin beriladi)\n"
-            f"Manzil: {data["region"]} / {data["city"]}\n"
-            f"Xizmat: {data["service"]}\n"
-            f"Tavsif: {data["description"]}\n"
-            f"Budjet: {data["budget"]} som\n"
+            f"Manzil: {data['region']} / {data['city']}\n"
+            f"Xizmat: {data['service']}\n"
+            f"Tavsif: {data['description']}\n"
+            f"Budjet: {data['budget']} som\n"
         )
         markup = location_button(data["location"][0], data["location"][1])
 
@@ -274,10 +274,10 @@ def register_user_handlers(
             text = (
                 "📢 Yangi buyurtma (kuzatuv):\n"
                 f"User: @{_safe_username(message)}\n"
-                f"Hudud: {data["region"]} / {data["city"]}\n"
-                f"Xizmat: {data["service"]}\n"
-                f"Budjet: {data["budget"]} som\n"
-                f"Tavsif: {data["description"]}\n"
+                f"Hudud: {data['region']} / {data['city']}\n"
+                f"Xizmat: {data['service']}\n"
+                f"Budjet: {data['budget']} som\n"
+                f"Tavsif: {data['description']}\n"
                 f"Nomer: {user_phone}\n"
             )
             markup = location_button(data["location"][0], data["location"][1])
@@ -402,7 +402,7 @@ def register_user_handlers(
                             else:
                                 await bot.send_message(worker_id, notif_text, reply_markup=full_markup)
 
-                    else:  # Fayl bolmasa
+                    else:
                         await bot.send_message(worker_id, notif_text, reply_markup=full_markup)
                 await bot.send_message(order["user_id"], "✅ Buyurtmangiz tasdiqlandi va ishchilarga yuborildi")
             await callback.answer("✅ Buyurtma ishchilarga yuborildi", show_alert=True)
