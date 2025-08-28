@@ -165,8 +165,8 @@ def admin_user_keyboard(order_id: int):
 def admin_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Barhca ishchilar"), KeyboardButton(text="Barcha userlar")],
-            [KeyboardButton(text="Bloklangan userlar"), KeyboardButton(text="Barchaga habar yuborish")]
+            [KeyboardButton(text="👨‍🔧Barcha ishchilar"), KeyboardButton(text="👤Barcha userlar")],
+            [KeyboardButton(text="🚷Bloklangan userlar"), KeyboardButton(text="📣Barchaga habar yuborish")]
         ],
         resize_keyboard=True,
         is_persistent=True
