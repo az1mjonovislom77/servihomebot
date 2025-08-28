@@ -1,5 +1,5 @@
 from aiogram import Dispatcher, types, F, Bot
-from keyboards import admin_worker_keyboard, confirm_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
+from keyboards import admin_worker_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
     REGIONS, admin_keyboard, target_keyboard, filter_type_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup

@@ -1,4 +1,4 @@
-
+# user_panel.py
 from aiogram import Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ContentType, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, \
     InputMediaDocument
@@ -84,6 +84,9 @@ def register_user_handlers(
             await message.answer("⚠️ Royxatdan viloyat tanlang", reply_markup=regions_keyboard())
             return
         await state.update_data(region=message.text)
+        users_db[message.from_user.id]['region'] = message.text
+        async with pool.acquire() as conn:
+            await save_user(conn, message.from_user.id, users_db[message.from_user.id])
         await message.answer("🏙 Shaharni tanlang:", reply_markup=cities_keyboard(message.text))
         await state.set_state(UserOrder.city)
     dp.message.register(on_user_region, StateFilter(UserOrder.region))
@@ -103,6 +106,9 @@ def register_user_handlers(
             await message.answer("⚠️ Royxatdan shahar tanlang", reply_markup=cities_keyboard(region))
             return
         await state.update_data(city=message.text)
+        users_db[message.from_user.id]['city'] = message.text
+        async with pool.acquire() as conn:
+            await save_user(conn, message.from_user.id, users_db[message.from_user.id])
         await message.answer("🛠 Xizmat turini tanlang:", reply_markup=services_keyboard())
         await state.set_state(UserOrder.service)
     dp.message.register(on_user_city, StateFilter(UserOrder.city))
