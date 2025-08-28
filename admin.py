@@ -209,8 +209,8 @@ def register_admin_handlers(
     async def process_worker_actions(call: types.CallbackQuery):
         if not is_admin(call):
             return
-        action, wid_str = call.data.split(":")
-        worker_id = int(wid_str)
+        action, worker_id_str = call.data.split(":")
+        worker_id = int(worker_id_str)
         data = workers_db.get(worker_id)
 
         if not data:
@@ -304,7 +304,7 @@ def register_admin_handlers(
             await message.answer("⚠️ Ro'yxatdan shaharni tanlang", reply_markup=cities_keyboard(region))
             return
         await state.update_data(city=message.text)
-        await message.answer("✍️ Habar matnini kiriting:", reply_markup=remove_keyboard())
+        await message.answer("✍️ Habar matnini kiriting:")
         await state.set_state(AdminStates.enter_message)
 
     async def on_enter_message(message: types.Message, state: FSMContext):
@@ -314,12 +314,12 @@ def register_admin_handlers(
         message_text = message.text.strip()
 
         targeted_users = set()
-        for uid, udata in users_db.items():
-            if udata.get('region') == region and udata.get('city') == city:
-                targeted_users.add(uid)
-        for wid, wdata in workers_db.items():
-            if wdata.get('region') == region and wdata.get('city') == city:
-                targeted_users.add(wid)
+        for user_id, user_data in users_db.items():
+            if user_data.get('region') == region and user_data.get('city') == city:
+                targeted_users.add(user_id)
+        for worker_id, worker_data in workers_db.items():
+            if worker_data.get('region') == region and worker_data.get('city') == city:
+                targeted_users.add(worker_id)
 
         sent_count = 0
         for user_id in targeted_users:
