@@ -332,7 +332,7 @@ def register_admin_handlers(
         await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.", reply_markup=admin_keyboard())
         await state.clear()
 
-    dp.message.register(show_workers, F.text == "🛠Barcha ishchilar")
+    dp.message.register(show_workers, F.text == "Barcha ishchilar")
     dp.message.register(show_blocked_users, F.text == "🚷Bloklangan userlar")
     dp.message.register(show_users,   F.text == "👤Barcha userlar")
     dp.message.register(block_user,   F.text.startswith("/block"))
