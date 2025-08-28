@@ -201,7 +201,7 @@ def register_admin_handlers(
             blocked_users.remove(username)
             async with pool.acquire() as conn:
                 await delete_blocked(conn, username)
-            await message.answer(f"✅ User @{username} blokdan chiqarildi")
+            await message.answer(f"✅ User @{username} blokdan chiqarildi!")
         else:
             await message.answer("⚠️ Bu user bloklanmagan")
 
@@ -214,27 +214,27 @@ def register_admin_handlers(
         data = workers_db.get(worker_id)
 
         if not data:
-            await call.answer("Ishchi topilmadi", show_alert=True)
+            await call.answer("Ishchi topilmadi!", show_alert=True)
             return
 
         if action == "approve_worker":
             data["approved"] = True
             async with pool.acquire() as conn:
                 await save_worker(conn, worker_id, data)
-            await bot.send_message(worker_id, "✅ Admin tasdiqladi! Endi buyurtmalarni qabul qilishingiz mumkin")
-            await call.message.edit_text("✅ Ishchi tasdiqlandi")
+            await bot.send_message(worker_id, "✅ Admin tasdiqladi! Endi buyurtmalarni qabul qilishingiz mumkin!")
+            await call.message.edit_text("✅ Ishchi tasdiqlandi!")
         elif action == "reject_worker":
             workers_db.pop(worker_id, None)
             async with pool.acquire() as conn:
                 await delete_worker(conn, worker_id)
-            await bot.send_message(worker_id, "❌ Admin arizangizni rad etdi")
-            await call.message.edit_text("❌ Ishchi rad etildi va ochirildi")
+            await bot.send_message(worker_id, "❌ Admin arizangizni rad etdi!")
+            await call.message.edit_text("❌ Ishchi rad etildi va ochirildi!")
         elif action == "fire_worker":
             workers_db.pop(worker_id, None)
             async with pool.acquire() as conn:
                 await delete_worker(conn, worker_id)
-            await bot.send_message(worker_id, "🗑 Siz ishdan boshatildingiz")
-            await call.message.edit_text("🗑 Ishchi ishdan boshatildi")
+            await bot.send_message(worker_id, "🗑 Siz ishdan boshatildingiz!")
+            await call.message.edit_text("🗑 Ishchi ishdan boshatildi!")
 
         await call.answer()
 
