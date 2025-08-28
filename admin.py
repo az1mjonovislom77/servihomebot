@@ -221,7 +221,7 @@ def register_admin_handlers(
             data["approved"] = True
             async with pool.acquire() as conn:
                 await save_worker(conn, worker_id, data)
-            await bot.send_message(worker_id, "✅ Admin tasdiqladi. Endi buyurtmalarni qabul qilishingiz mumkin")
+            await bot.send_message(worker_id, "✅ Admin tasdiqladi! Endi buyurtmalarni qabul qilishingiz mumkin")
             await call.message.edit_text("✅ Ishchi tasdiqlandi")
         elif action == "reject_worker":
             workers_db.pop(worker_id, None)
