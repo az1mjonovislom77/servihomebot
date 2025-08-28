@@ -1,15 +1,10 @@
 import asyncpg
 
-# -------------------
-# DB connection
-# -------------------
-async def connect_db():
-    return await asyncpg.connect(dsn="YOUR_RAILWAY_POSTGRES_URL")  
-    # Railway dagi DATABASE_URL ni qo‘ying
 
-# -------------------
-# Tables creation
-# -------------------
+async def connect_db():
+    return await asyncpg.connect(dsn="YOUR_RAILWAY_POSTGRES_URL")
+
+
 async def create_tables(conn):
     await conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -69,9 +64,7 @@ async def create_tables(conn):
         );
     ''')
 
-# -------------------
-# Load DB to memory
-# -------------------
+
 async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders, blocked_users, admins):
     users = await conn.fetch('SELECT * FROM users')
     for row in users:
@@ -104,9 +97,7 @@ async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders
     for row in await conn.fetch('SELECT * FROM admins'):
         admins.add(row['admin_id'])
 
-# -------------------
-# User functions
-# -------------------
+
 async def save_user(conn, user_id, data):
     await conn.execute('''
         INSERT INTO users (user_id, phone, username, region, city)
@@ -118,9 +109,7 @@ async def save_user(conn, user_id, data):
 async def delete_user(conn, user_id):
     await conn.execute('DELETE FROM users WHERE user_id=$1', user_id)
 
-# -------------------
-# Worker functions
-# -------------------
+
 async def save_worker(conn, worker_id, data):
     await conn.execute('''
         INSERT INTO workers (worker_id, phone, username, name, region, city, profession, approved)
@@ -135,9 +124,7 @@ async def save_worker(conn, worker_id, data):
 async def delete_worker(conn, worker_id):
     await conn.execute('DELETE FROM workers WHERE worker_id=$1', worker_id)
 
-# -------------------
-# Orders
-# -------------------
+
 async def save_order(conn, order_id, data):
     media_type = None
     media_file_id = None
@@ -164,9 +151,7 @@ async def save_order(conn, order_id, data):
 async def delete_order(conn, order_id):
     await conn.execute('DELETE FROM orders WHERE order_id=$1', order_id)
 
-# -------------------
-# Offers
-# -------------------
+
 async def save_offer(conn, order_id, worker_id, price=None):
     if price is None:
         row = await conn.fetchrow("SELECT budget FROM orders WHERE order_id=$1", order_id)
@@ -180,9 +165,7 @@ async def save_offer(conn, order_id, worker_id, price=None):
         ON CONFLICT (order_id, worker_id) DO UPDATE SET price=$3
     ''', order_id, worker_id, price)
 
-# -------------------
-# Blocked & Admins
-# -------------------
+
 async def add_blocked(conn, username):
     await conn.execute('INSERT INTO blocked_users (username) VALUES ($1) ON CONFLICT DO NOTHING', username)
 
@@ -195,9 +178,7 @@ async def add_admin(conn, admin_id):
 async def remove_admin(conn, admin_id):
     await conn.execute('DELETE FROM admins WHERE admin_id=$1', admin_id)
 
-# -------------------
-# Get single records
-# -------------------
+
 async def get_user(conn, user_id):
     return dict(await conn.fetchrow('SELECT * FROM users WHERE user_id=$1', user_id) or {})
 
@@ -207,9 +188,7 @@ async def get_worker(conn, worker_id):
 async def get_order(conn, order_id):
     return dict(await conn.fetchrow('SELECT * FROM orders WHERE order_id=$1', order_id) or {})
 
-# -------------------
-# Update functions
-# -------------------
+
 async def update_user(conn, user_id, **kwargs):
     await _update_dynamic(conn, "users", "user_id", user_id, kwargs)
 
@@ -219,7 +198,7 @@ async def update_worker(conn, worker_id, **kwargs):
 async def update_order(conn, order_id, **kwargs):
     await _update_dynamic(conn, "orders", "order_id", order_id, kwargs)
 
-# helper for dynamic update
+
 async def _update_dynamic(conn, table, key, key_val, fields: dict):
     if not fields:
         return
