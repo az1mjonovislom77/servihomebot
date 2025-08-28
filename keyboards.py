@@ -160,11 +160,21 @@ def admin_user_keyboard(order_id: int):
         ]
     ])
 
+def target_keyboard():
+    rows = [[KeyboardButton(text="👤 Userlarga"), KeyboardButton(text="👷 Ishchilarga")]]
+    rows.append([KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+def filter_type_keyboard():
+    rows = [[KeyboardButton(text="🌆 Viloyat bo'yicha"), KeyboardButton(text="🏙 Shahar bo'yicha")]]
+    rows.append([KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
 def admin_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Barcha ishchilar"), KeyboardButton(text="👤Barcha userlar")],
-            [KeyboardButton(text="🚷Bloklangan userlar"), KeyboardButton(text="📣Userlarga habar yuborish")],
+            [KeyboardButton(text="🚷Bloklangan userlar"), KeyboardButton(text="📣Tanlab habar yuborish")],
             [KeyboardButton(text="📣Barchaga habar yuborish")]
         ],
         resize_keyboard=True,

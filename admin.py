@@ -1,6 +1,6 @@
 from aiogram import Dispatcher, types, F, Bot
 from keyboards import admin_worker_keyboard, confirm_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
-    REGIONS, admin_keyboard
+    REGIONS, admin_keyboard, target_keyboard, filter_type_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from database import save_worker, delete_worker, delete_user, add_blocked, delete_blocked, add_admin, remove_admin
@@ -10,6 +10,8 @@ class FeedbackStates(StatesGroup):
     waiting_feedback = State()
 
 class AdminStates(StatesGroup):
+    select_target = State()
+    select_filter_type = State()
     select_region = State()
     select_city = State()
     enter_message = State()
@@ -272,31 +274,68 @@ def register_admin_handlers(
     async def message_to_all_start(message: types.Message, state: FSMContext):
         if not is_admin(message):
             return
+        await message.answer("Kimga habar yubormoqchisiz?", reply_markup=target_keyboard())
+        await state.set_state(AdminStates.select_target)
+
+    async def on_select_target(message: types.Message, state: FSMContext):
+        if message.text == "❌ Bekor qilish":
+            await state.clear()
+            await message.answer("❌ Bekor qilindi", reply_markup=admin_keyboard())
+            return
+        if message.text == "🔙 Orqaga":
+            await state.clear()
+            await message.answer("❌ Bekor qilindi", reply_markup=admin_keyboard())
+            return
+        if message.text not in ["👤 Userlarga", "👷 Ishchilarga"]:
+            await message.answer("⚠️ Ro'yxatdan tanlang", reply_markup=target_keyboard())
+            return
+        await state.update_data(target=message.text)
+        await message.answer("Qanday tanlov bo'yicha?", reply_markup=filter_type_keyboard())
+        await state.set_state(AdminStates.select_filter_type)
+
+    async def on_select_filter_type(message: types.Message, state: FSMContext):
+        if message.text == "❌ Bekor qilish":
+            await state.clear()
+            await message.answer("❌ Bekor qilindi", reply_markup=admin_keyboard())
+            return
+        if message.text == "🔙 Orqaga":
+            await state.set_state(AdminStates.select_target)
+            await message.answer("Kimga habar yubormoqchisiz?", reply_markup=target_keyboard())
+            return
+        if message.text not in ["🌆 Viloyat bo'yicha", "🏙 Shahar bo'yicha"]:
+            await message.answer("⚠️ Ro'yxatdan tanlang", reply_markup=filter_type_keyboard())
+            return
+        await state.update_data(filter_type=message.text)
         await message.answer("🌆 Viloyatni tanlang:", reply_markup=regions_keyboard())
         await state.set_state(AdminStates.select_region)
 
     async def on_select_region(message: types.Message, state: FSMContext):
         if message.text == "❌ Bekor qilish":
             await state.clear()
-            await message.answer("❌ Bekor qilindi")
+            await message.answer("❌ Bekor qilindi", reply_markup=admin_keyboard())
             return
         if message.text == "🔙 Orqaga":
-            await state.clear()
-            await message.answer("❌ Bekor qilindi")
+            await state.set_state(AdminStates.select_filter_type)
+            await message.answer("Qanday tanlov bo'yicha?", reply_markup=filter_type_keyboard())
             return
         if message.text not in REGIONS:
             await message.answer("⚠️ Ro'yxatdan viloyatni tanlang", reply_markup=regions_keyboard())
             return
         await state.update_data(region=message.text)
-        await message.answer("🏙 Shaharni tanlang:", reply_markup=cities_keyboard(message.text))
-        await state.set_state(AdminStates.select_city)
+        data = await state.get_data()
+        if data.get("filter_type") == "🏙 Shahar bo'yicha":
+            await message.answer("🏙 Shaharni tanlang:", reply_markup=cities_keyboard(message.text))
+            await state.set_state(AdminStates.select_city)
+        else:
+            await message.answer("✍️ Habar matnini kiriting:", reply_markup=remove_keyboard())
+            await state.set_state(AdminStates.enter_message)
 
     async def on_select_city(message: types.Message, state: FSMContext):
         data = await state.get_data()
         region = data.get("region")
         if message.text == "❌ Bekor qilish":
             await state.clear()
-            await message.answer("❌ Bekor qilindi")
+            await message.answer("❌ Bekor qilindi", reply_markup=admin_keyboard())
             return
         if message.text == "🔙 Orqaga":
             await state.set_state(AdminStates.select_region)
@@ -311,17 +350,25 @@ def register_admin_handlers(
 
     async def on_enter_message(message: types.Message, state: FSMContext):
         data = await state.get_data()
+        target = data.get("target")
+        filter_type = data.get("filter_type")
         region = data.get("region")
         city = data.get("city")
         message_text = message.text.strip()
 
         targeted_users = set()
-        for uid, udata in users_db.items():
-            if udata.get('region') == region and udata.get('city') == city:
-                targeted_users.add(uid)
-        for wid, wdata in workers_db.items():
-            if wdata.get('region') == region and wdata.get('city') == city:
-                targeted_users.add(wid)
+        if target == "👤 Userlarga":
+            db = users_db
+        else:
+            db = workers_db
+
+        for uid, udata in db.items():
+            if filter_type == "🌆 Viloyat bo'yicha":
+                if udata.get('region') == region:
+                    targeted_users.add(uid)
+            else:
+                if udata.get('region') == region and udata.get('city') == city:
+                    targeted_users.add(uid)
 
         sent_count = 0
         for user_id in targeted_users:
@@ -363,8 +410,10 @@ def register_admin_handlers(
     dp.message.register(unblock_user, F.text.startswith("/unblock"))
     dp.message.register(add_admin_cmd, F.text.startswith("/add_admin"))
     dp.message.register(remove_admin_cmd, F.text.startswith("/remove_admin"))
-    dp.message.register(message_to_all_start, F.text == "📣Userlarga habar yuborish")
+    dp.message.register(message_to_all_start, F.text == "📣Tanlab habar yuborish")
     dp.message.register(broadcast_start, F.text == "📣Barchaga habar yuborish")
+    dp.message.register(on_select_target, AdminStates.select_target)
+    dp.message.register(on_select_filter_type, AdminStates.select_filter_type)
     dp.message.register(on_select_region, AdminStates.select_region)
     dp.message.register(on_select_city, AdminStates.select_city)
     dp.message.register(on_enter_message, AdminStates.enter_message)
