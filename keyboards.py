@@ -165,9 +165,10 @@ def admin_user_keyboard(order_id: int):
 def admin_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="/workers"), KeyboardButton(text="/users"), KeyboardButton(text="/blocked_users")],
+            [KeyboardButton(text="/workers"), KeyboardButton(text="/users"), KeyboardButton(text="/blocked_users"), KeyboardButton(text="/message_to_all")],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
+        is_persistent=True
     )
 
 
