@@ -1,6 +1,6 @@
 from aiogram import Dispatcher, types, F, Bot
 from keyboards import admin_worker_keyboard, confirm_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
-    REGIONS
+    REGIONS, admin_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from database import save_worker, delete_worker, delete_user, add_blocked, delete_blocked, add_admin, remove_admin
@@ -331,7 +331,7 @@ def register_admin_handlers(
             except:
                 pass
 
-        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.")
+        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.", reply_markup=admin_keyboard())
         await state.clear()
 
     async def broadcast_start(message: types.Message, state: FSMContext):
@@ -353,7 +353,7 @@ def register_admin_handlers(
             except:
                 pass
 
-        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.")
+        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.", reply_markup=admin_keyboard())
         await state.clear()
 
     dp.message.register(show_workers, F.text == "Barcha ishchilar")
