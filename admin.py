@@ -8,6 +8,11 @@ from database import save_worker, delete_worker, delete_user, add_blocked, delet
 class FeedbackStates(StatesGroup):
     waiting_feedback = State()
 
+class AdminStates(StatesGroup):
+    select_region = State()
+    select_city = State()
+    enter_message = State()
+
 
 async def feedback_worker_callback(
     call: types.CallbackQuery,
@@ -262,6 +267,71 @@ def register_admin_handlers(
         else:
             await message.answer("⚠️ Bu admin topilmadi")
 
+    async def message_to_all_start(message: types.Message, state: FSMContext):
+        if not is_admin(message):
+            return
+        await message.answer("🌆 Viloyatni tanlang:", reply_markup=regions_keyboard())
+        await state.set_state(AdminStates.select_region)
+
+    async def on_select_region(message: types.Message, state: FSMContext):
+        if message.text == "❌ Bekor qilish":
+            await state.clear()
+            await message.answer("❌ Bekor qilindi")
+            return
+        if message.text == "🔙 Orqaga":
+            await state.clear()
+            await message.answer("❌ Bekor qilindi")
+            return
+        if message.text not in REGIONS:
+            await message.answer("⚠️ Ro'yxatdan viloyatni tanlang", reply_markup=regions_keyboard())
+            return
+        await state.update_data(region=message.text)
+        await message.answer("🏙 Shaharni tanlang:", reply_markup=cities_keyboard(message.text))
+        await state.set_state(AdminStates.select_city)
+
+    async def on_select_city(message: types.Message, state: FSMContext):
+        data = await state.get_data()
+        region = data.get("region")
+        if message.text == "❌ Bekor qilish":
+            await state.clear()
+            await message.answer("❌ Bekor qilindi")
+            return
+        if message.text == "🔙 Orqaga":
+            await state.set_state(AdminStates.select_region)
+            await message.answer("🌆 Viloyatni tanlang:", reply_markup=regions_keyboard())
+            return
+        if message.text not in (REGIONS.get(region) or []):
+            await message.answer("⚠️ Ro'yxatdan shaharni tanlang", reply_markup=cities_keyboard(region))
+            return
+        await state.update_data(city=message.text)
+        await message.answer("✍️ Habar matnini kiriting:", reply_markup=remove_keyboard())
+        await state.set_state(AdminStates.enter_message)
+
+    async def on_enter_message(message: types.Message, state: FSMContext):
+        data = await state.get_data()
+        region = data.get("region")
+        city = data.get("city")
+        message_text = message.text.strip()
+
+        targeted_users = set()
+        for uid, udata in users_db.items():
+            if udata.get('region') == region and udata.get('city') == city:
+                targeted_users.add(uid)
+        for wid, wdata in workers_db.items():
+            if wdata.get('region') == region and wdata.get('city') == city:
+                targeted_users.add(wid)
+
+        sent_count = 0
+        for user_id in targeted_users:
+            try:
+                await bot.send_message(user_id, message_text)
+                sent_count += 1
+            except:
+                pass
+
+        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.")
+        await state.clear()
+
     dp.message.register(show_workers, F.text == "/workers")
     dp.message.register(show_blocked_users, F.text == "/blocked_users")
     dp.message.register(show_users,   F.text == "/users")
@@ -269,6 +339,10 @@ def register_admin_handlers(
     dp.message.register(unblock_user, F.text.startswith("/unblock"))
     dp.message.register(add_admin_cmd, F.text.startswith("/add_admin"))
     dp.message.register(remove_admin_cmd, F.text.startswith("/remove_admin"))
+    dp.message.register(message_to_all_start, F.text == "/message_to_all")
+    dp.message.register(on_select_region, AdminStates.select_region)
+    dp.message.register(on_select_city, AdminStates.select_city)
+    dp.message.register(on_enter_message, AdminStates.enter_message)
     dp.callback_query.register(
         process_worker_actions,
         F.data.startswith(("approve_worker", "reject_worker", "fire_worker"))
