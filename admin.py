@@ -1,5 +1,6 @@
 from aiogram import Dispatcher, types, F, Bot
-from keyboards import admin_worker_keyboard, regions_keyboard, cities_keyboard, remove_keyboard, REGIONS, admin_keyboard
+from keyboards import admin_worker_keyboard, confirm_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
+    REGIONS
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from database import save_worker, delete_worker, delete_user, add_blocked, delete_blocked, add_admin, remove_admin
@@ -12,6 +13,7 @@ class AdminStates(StatesGroup):
     select_region = State()
     select_city = State()
     enter_message = State()
+    enter_global_message = State()
 
 
 async def feedback_worker_callback(
@@ -201,7 +203,7 @@ def register_admin_handlers(
             blocked_users.remove(username)
             async with pool.acquire() as conn:
                 await delete_blocked(conn, username)
-            await message.answer(f"✅ User @{username} blokdan chiqarildi!")
+            await message.answer(f"✅ User @{username} blokdan chiqarildi")
         else:
             await message.answer("⚠️ Bu user bloklanmagan")
 
@@ -209,32 +211,32 @@ def register_admin_handlers(
     async def process_worker_actions(call: types.CallbackQuery):
         if not is_admin(call):
             return
-        action, worker_id_str = call.data.split(":")
-        worker_id = int(worker_id_str)
+        action, wid_str = call.data.split(":")
+        worker_id = int(wid_str)
         data = workers_db.get(worker_id)
 
         if not data:
-            await call.answer("Ishchi topilmadi!", show_alert=True)
+            await call.answer("Ishchi topilmadi", show_alert=True)
             return
 
         if action == "approve_worker":
             data["approved"] = True
             async with pool.acquire() as conn:
                 await save_worker(conn, worker_id, data)
-            await bot.send_message(worker_id, "✅ Admin tasdiqladi! Endi buyurtmalarni qabul qilishingiz mumkin!")
-            await call.message.edit_text("✅ Ishchi tasdiqlandi!")
+            await bot.send_message(worker_id, "✅ Admin tasdiqladi. Endi buyurtmalarni qabul qilishingiz mumkin")
+            await call.message.edit_text("✅ Ishchi tasdiqlandi")
         elif action == "reject_worker":
             workers_db.pop(worker_id, None)
             async with pool.acquire() as conn:
                 await delete_worker(conn, worker_id)
-            await bot.send_message(worker_id, "❌ Admin arizangizni rad etdi!")
-            await call.message.edit_text("❌ Ishchi rad etildi va ochirildi!")
+            await bot.send_message(worker_id, "❌ Admin arizangizni rad etdi")
+            await call.message.edit_text("❌ Ishchi rad etildi va ochirildi")
         elif action == "fire_worker":
             workers_db.pop(worker_id, None)
             async with pool.acquire() as conn:
                 await delete_worker(conn, worker_id)
-            await bot.send_message(worker_id, "🗑 Siz ishdan boshatildingiz!")
-            await call.message.edit_text("🗑 Ishchi ishdan boshatildi!")
+            await bot.send_message(worker_id, "🗑 Siz ishdan boshatildingiz")
+            await call.message.edit_text("🗑 Ishchi ishdan boshatildi")
 
         await call.answer()
 
@@ -314,12 +316,12 @@ def register_admin_handlers(
         message_text = message.text.strip()
 
         targeted_users = set()
-        for user_id, user_data in users_db.items():
-            if user_data.get('region') == region and user_data.get('city') == city:
-                targeted_users.add(user_id)
-        for worker_id, worker_data in workers_db.items():
-            if worker_data.get('region') == region and worker_data.get('city') == city:
-                targeted_users.add(worker_id)
+        for uid, udata in users_db.items():
+            if udata.get('region') == region and udata.get('city') == city:
+                targeted_users.add(uid)
+        for wid, wdata in workers_db.items():
+            if wdata.get('region') == region and wdata.get('city') == city:
+                targeted_users.add(wid)
 
         sent_count = 0
         for user_id in targeted_users:
@@ -329,20 +331,44 @@ def register_admin_handlers(
             except:
                 pass
 
-        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.", reply_markup=admin_keyboard())
+        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.")
+        await state.clear()
+
+    async def broadcast_start(message: types.Message, state: FSMContext):
+        if not is_admin(message):
+            return
+        await message.answer("✍️ Barcha user va ishchilarga yuboriladigan habar matnini kiriting:", reply_markup=remove_keyboard())
+        await state.set_state(AdminStates.enter_global_message)
+
+    async def on_enter_global_message(message: types.Message, state: FSMContext):
+        message_text = message.text.strip()
+
+        targeted_users = set(users_db.keys()) | set(workers_db.keys())
+
+        sent_count = 0
+        for user_id in targeted_users:
+            try:
+                await bot.send_message(user_id, message_text)
+                sent_count += 1
+            except:
+                pass
+
+        await message.answer(f"✅ Habar {sent_count} ta foydalanuvchiga yuborildi.")
         await state.clear()
 
     dp.message.register(show_workers, F.text == "Barcha ishchilar")
     dp.message.register(show_blocked_users, F.text == "🚷Bloklangan userlar")
-    dp.message.register(show_users,   F.text == "👤Barcha userlar")
-    dp.message.register(block_user,   F.text.startswith("/block"))
+    dp.message.register(show_users, F.text == "👤Barcha userlar")
+    dp.message.register(block_user, F.text.startswith("/block"))
     dp.message.register(unblock_user, F.text.startswith("/unblock"))
     dp.message.register(add_admin_cmd, F.text.startswith("/add_admin"))
     dp.message.register(remove_admin_cmd, F.text.startswith("/remove_admin"))
-    dp.message.register(message_to_all_start, F.text == "📣Barchaga habar yuborish")
+    dp.message.register(message_to_all_start, F.text == "📣Userlarga habar yuborish")
+    dp.message.register(broadcast_start, F.text == "📣Barchaga habar yuborish")
     dp.message.register(on_select_region, AdminStates.select_region)
     dp.message.register(on_select_city, AdminStates.select_city)
     dp.message.register(on_enter_message, AdminStates.enter_message)
+    dp.message.register(on_enter_global_message, AdminStates.enter_global_message)
     dp.callback_query.register(
         process_worker_actions,
         F.data.startswith(("approve_worker", "reject_worker", "fire_worker"))
