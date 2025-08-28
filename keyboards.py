@@ -28,8 +28,6 @@ SERVICES = [
     "Bog`bon",
     "Uy tozalash",
     "Uy dizayneri",
-    "Qurilish buyumlarini yetkazib berish",
-
 ]
 
 
