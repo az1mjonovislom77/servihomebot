@@ -2,7 +2,7 @@ import asyncpg
 
 
 async def connect_db():
-    return await asyncpg.connect(dsn="YOUR_RAILWAY_POSTGRES_URL")
+    return await asyncpg.connect(dsn="postgresql://postgres:KCuBwHFJNZEPLvfGlMBJGcKrEoTiHWRW@postgres.railway.internal:5432/railway")
 
 
 async def create_tables(conn):
