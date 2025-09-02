@@ -224,16 +224,16 @@ def register_admin_handlers(
                         elif username:
                             user = await bot.get_chat("@" + username)
                         user_data = {
-                            "first_name": user.first_name or "Noma'lum",
-                            "phone": "Noma'lum"
+                            "first_name": user.first_name or "Nomalum",
+                            "phone": "Nomalum"
                         }
                         user_id = user.id
                     except Exception:
-                        user_data = {"first_name": "Noma'lum", "phone": "Noma'lum"}
+                        user_data = {"first_name": "Nomalum", "phone": "Nomalum"}
 
                 display = f"@{username}" if username else f"{user_id}"
                 txt.append(
-                    f"👤 {display} — ID: {user_id}, Ism: {user_data.get('first_name')}, Tel: {user_data.get('phone', 'Noma\'lum')}")
+                    f"👤 {display} — ID: {user_id}, Ism: {user_data.get('first_name')}, Tel: {user_data.get('phone', 'Nomalum')}")
 
         await message.answer("\n".join(txt))
 
