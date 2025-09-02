@@ -186,15 +186,55 @@ def register_admin_handlers(
             return
 
         if not blocked_users:
-            await message.answer("♻ Bloklangan userlar yoq\n\n"
-                                 "Block va Unblock qilish uchun korsatilganidek yozing‼️ \n"
-                                 "/block username yoki user_id\n"
-                                 "/unblock username yoki user_id\n")
+            await message.answer(
+                "♻ Bloklangan userlar yo'q\n\n"
+                "Block va Unblock qilish uchun: \n"
+                "/block username yoki user_id\n"
+                "/unblock username yoki user_id\n"
+            )
             return
 
         txt = ["♻ Bloklangan userlar:"]
-        for username in blocked_users:
-            txt.append(f"👤 @{username}")
+
+        async with pool.acquire() as conn:
+            for identifier in blocked_users:
+                user_id = None
+                username = None
+                user_data = None
+
+                if isinstance(identifier, int):
+                    user_id = identifier
+                else:
+                    username = identifier.lstrip("@").lower()
+
+                if user_id and user_id in users_db:
+                    user_data = users_db[user_id]
+                elif username:
+                    for uid, data in users_db.items():
+                        u_name = data.get("username", "").lower()
+                        if u_name == username:
+                            user_id = uid
+                            user_data = data
+                            break
+
+                if user_data is None:
+                    try:
+                        if user_id:
+                            user = await bot.get_chat(user_id)
+                        elif username:
+                            user = await bot.get_chat("@" + username)
+                        user_data = {
+                            "first_name": user.first_name or "Noma'lum",
+                            "phone": "Noma'lum"
+                        }
+                        user_id = user.id
+                    except Exception:
+                        user_data = {"first_name": "Noma'lum", "phone": "Noma'lum"}
+
+                display = f"@{username}" if username else f"{user_id}"
+                txt.append(
+                    f"👤 {display} — ID: {user_id}, Ism: {user_data.get('first_name')}, Tel: {user_data.get('phone', 'Noma\'lum')}")
+
         await message.answer("\n".join(txt))
 
     async def unblock_user(message: types.Message):
