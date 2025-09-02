@@ -298,38 +298,53 @@ def register_admin_handlers(
         identifier = args[1].strip()
         user_id = None
         username = None
+        target = None
 
-        if identifier.isdigit():
-            user_id = int(identifier)
-        else:
-            username = identifier.lstrip("@").lower()
-
-        target = user_id if user_id else username
-
-        if target in blocked_users:
-            blocked_users.remove(target)
-            async with pool.acquire() as conn:
-                await delete_blocked(conn, target)
-                # Add back to dicts if data exists in DB
-                if user_id:
-                    user_row = await conn.fetchrow("SELECT * FROM users WHERE user_id=$1", user_id)
-                    if user_row:
-                        users_db[user_id] = dict(user_row)
-                    worker_row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
-                    if worker_row:
-                        workers_db[user_id] = dict(worker_row)
-                elif username:
+        async with pool.acquire() as conn:
+            if identifier.isdigit():
+                user_id = int(identifier)
+                if user_id in blocked_users:
+                    target = user_id
+            else:
+                username = identifier.lstrip("@").lower()
+                if username in blocked_users:
+                    target = username
+                else:
                     user_row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
                     if user_row:
                         user_id = user_row['user_id']
-                        users_db[user_id] = dict(user_row)
-                    worker_row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
-                    if worker_row:
-                        user_id = worker_row['worker_id']
-                        workers_db[user_id] = dict(worker_row)
-            await message.answer(f"✅ Foydalanuvchi {'@' + username if username else user_id} blokdan chiqarildi")
-        else:
-            await message.answer("⚠️ Bu foydalanuvchi bloklanmagan")
+                    else:
+                        worker_row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
+                        if worker_row:
+                            user_id = worker_row['worker_id']
+                    if user_id and user_id in blocked_users:
+                        target = user_id
+
+            if target is None:
+                await message.answer("⚠️ Bu foydalanuvchi bloklanmagan")
+                return
+
+            blocked_users.remove(target)
+            await delete_blocked(conn, target)
+
+            if user_id is None and username:
+                user_row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
+                if user_row:
+                    user_id = user_row['user_id']
+                    users_db[user_id] = dict(user_row)
+                worker_row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
+                if worker_row:
+                    user_id = worker_row['worker_id']
+                    workers_db[user_id] = dict(worker_row)
+            elif user_id:
+                user_row = await conn.fetchrow("SELECT * FROM users WHERE user_id=$1", user_id)
+                if user_row:
+                    users_db[user_id] = dict(user_row)
+                worker_row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
+                if worker_row:
+                    workers_db[user_id] = dict(worker_row)
+
+        await message.answer(f"✅ Foydalanuvchi {'@' + username if username else user_id} blokdan chiqarildi")
 
     async def process_worker_actions(call: types.CallbackQuery):
         if not is_admin(call):
