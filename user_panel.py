@@ -426,7 +426,7 @@ def register_user_handlers(
                                 await bot.send_media_group(worker_id, album)
                                 await bot.send_message(worker_id, "📍 Joylashuvi:", reply_markup=full_markup)
 
-                        else:  # Faqat 1 ta fayl bolsa
+                        else:
                             m = media_list[0]
                             if m["type"] == "photo":
                                 await bot.send_photo(worker_id, m["file_id"], caption=notif_text,
