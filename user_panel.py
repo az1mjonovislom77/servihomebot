@@ -209,7 +209,7 @@ def register_user_handlers(
     async def on_user_location(message: Message, state: FSMContext):
         data = await state.get_data()
 
-        if message.text == "Boshqa lokatsiya yuborish":
+        if message.text == "📌 Boshqa lokatsiya yuborish":
             await message.answer(
                 "📍 Iltimos, boshqa lokatsiyani yuboring.\n"
                 "Telegram orqali lokatsiyani yuborish uchun 📎 tugmasini bosing va 'Location' ni tanlang.",
