@@ -9,7 +9,7 @@ from keyboards import (
     start_keyboard, phone_request_keyboard, regions_keyboard, cities_keyboard, services_keyboard,
     location_request_keyboard, confirm_keyboard, remove_keyboard, skip_keyboard,
     REGIONS, SERVICES, worker_actions_keyboard, admin_user_keyboard, choose_worker_keyboard,
-    location_button, choose_time_keyboard, location_keyboard
+    location_button, choose_time_keyboard
 )
 from database import save_user, save_order, update_order
 
@@ -202,7 +202,7 @@ def register_user_handlers(
             await message.answer("⚠️ Faqat raqam kiriting (masalan: 150000)")
             return
         await state.update_data(budget=int(message.text))
-        await message.answer("📍 Iltimos, lokatsiyani yuboring:", reply_markup=location_keyboard())
+        await message.answer("📍 Iltimos, lokatsiyani yuboring:", reply_markup=location_request_keyboard())
         await state.set_state(UserOrder.location)
     dp.message.register(on_user_budget, StateFilter(UserOrder.budget))
 
@@ -219,7 +219,7 @@ def register_user_handlers(
         if not message.location:
             await message.answer(
                 "⚠️ Iltimos, GPS orqali yoki kartadan lokatsiyani yuboring.",
-                reply_markup=location_keyboard()
+                reply_markup=location_request_keyboard()
             )
             return
 

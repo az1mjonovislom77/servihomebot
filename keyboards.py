@@ -48,10 +48,12 @@ def phone_request_keyboard():
 
 
 def location_request_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📍 Lokatsiyani yuborish", request_location=True)]],
-        resize_keyboard=True, one_time_keyboard=True
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(
+        KeyboardButton(text="📍 Hozirgi joyim", request_location=True),
+        KeyboardButton(text="🗺 Kartadan tanlash")
     )
+    return kb
 
 
 def regions_keyboard():
@@ -121,13 +123,7 @@ def worker_actions_keyboard(order_id: int):
     )
 
 
-def location_keyboard():
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(
-        KeyboardButton(text="📍 Hozirgi joyim", request_location=True),
-        KeyboardButton(text="🗺 Kartadan tanlash")
-    )
-    return kb
+
 
 
 def choose_time_keyboard():
