@@ -218,22 +218,32 @@ def register_admin_handlers(
                             break
 
                 if user_data is None:
+                    if user_id and user_id in workers_db:
+                        user_data = workers_db[user_id]
+                    elif username:
+                        for uid, data in workers_db.items():
+                            u_name = data.get("username", "").lower()
+                            if u_name == username:
+                                user_id = uid
+                                user_data = data
+                                break
+
+                if user_data is None:
                     try:
-                        if user_id:
-                            user = await bot.get_chat(user_id)
-                        elif username:
-                            user = await bot.get_chat("@" + username)
+                        chat = await bot.get_chat(user_id or f"@{username}")
                         user_data = {
-                            "first_name": user.first_name or "Nomalum",
-                            "phone": "Nomalum"
+                            "first_name": chat.first_name or "Noma’lum",
+                            "phone": "Noma’lum"
                         }
-                        user_id = user.id
+                        user_id = chat.id
                     except Exception:
-                        user_data = {"first_name": "Nomalum", "phone": "Nomalum"}
+                        user_data = {"first_name": "Noma’lum", "phone": "Noma’lum"}
 
                 display = f"@{username}" if username else f"{user_id}"
-                txt.append(
-                    f"👤 ID: {display}, Ism: {user_data.get('first_name')}, Tel: {user_data.get('phone', 'Nomalum')}")
+                first_name = user_data.get("first_name", "Noma’lum")
+                phone = user_data.get("phone", "Noma’lum")
+
+                txt.append(f"👤 {display} — ID: {user_id}, Ism: {first_name}, Tel: {phone}")
 
         await message.answer("\n".join(txt))
 
