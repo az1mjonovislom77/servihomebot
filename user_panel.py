@@ -213,9 +213,8 @@ def register_user_handlers(
             await message.answer(
                 "📍 Iltimos, boshqa lokatsiyani yuboring.\n"
                 "Telegram orqali lokatsiyani yuborish uchun 📎 tugmasini bosing va 'Location' ni tanlang.",
-                reply_markup=location_request_keyboard()
+                reply_markup=remove_keyboard()
             )
-            await state.set_state(UserOrder.location)
             return
 
         if not message.location:
@@ -242,11 +241,31 @@ def register_user_handlers(
 
         markup = location_button(latitude, longitude)
 
-        await message.answer(summary, reply_markup=markup)
+        media_list = data.get("media", [])
+        if media_list:
+            if len(media_list) == 1:
+                media = media_list[0]
+                if media["type"] == "photo":
+                    await message.answer_photo(media["file_id"], caption=summary, reply_markup=markup)
+                else:
+                    await message.answer_video(media["file_id"], caption=summary, reply_markup=markup)
+            else:
+                input_media = []
+                for m in media_list:
+                    if m["type"] == "photo":
+                        input_media.append(InputMediaPhoto(media=m["file_id"]))
+                    else:
+                        input_media.append(InputMediaVideo(media=m["file_id"]))
+                input_media[0].caption = summary
+                await bot.send_media_group(chat_id=message.chat.id, media=input_media)
+                await message.answer("📍 Lokatsiya:", reply_markup=markup)
+        else:
+            await message.answer(summary, reply_markup=markup)
+
         await message.answer("Yuborilsinmi?", reply_markup=confirm_keyboard())
         await state.set_state(UserOrder.confirm)
 
-    dp.message.register(on_user_location, F.content_type == ContentType.LOCATION, StateFilter(UserOrder.location))
+    dp.message.register(on_user_location, StateFilter(UserOrder.location))
 
     async def on_user_confirm(message: Message, state: FSMContext):
         if message.text == "❌ Bekor qilish":
