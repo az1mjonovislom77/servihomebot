@@ -9,7 +9,7 @@ from keyboards import (
     start_keyboard, phone_request_keyboard, regions_keyboard, cities_keyboard, services_keyboard,
     location_request_keyboard, confirm_keyboard, remove_keyboard, skip_keyboard,
     REGIONS, SERVICES, worker_actions_keyboard, admin_user_keyboard, choose_worker_keyboard,
-    location_button, choose_time_keyboard
+    location_button, choose_time_keyboard, location_keyboard
 )
 from database import save_user, save_order, update_order
 
@@ -207,12 +207,24 @@ def register_user_handlers(
     dp.message.register(on_user_budget, StateFilter(UserOrder.budget))
 
     async def on_user_location(message: Message, state: FSMContext):
+        data = await state.get_data()
+
+        if message.text == "🗺 Kartadan tanlash":
+            await message.answer(
+                "📍 Iltimos, kartadan joylashuvni tanlang. Marker qo'yganingizda 'Lokatsiyani yuborish' tugmasini bosing.",
+                reply_markup=None
+            )
+            return
+
         if not message.location:
-            await message.answer("⚠️ Tugma orqali lokatsiya yuboring.", reply_markup=location_request_keyboard())
+            await message.answer(
+                "⚠️ Iltimos, GPS orqali yoki kartadan lokatsiyani yuboring.",
+                reply_markup=location_keyboard()
+            )
             return
 
         await state.update_data(location=(message.location.latitude, message.location.longitude))
-        data = await state.get_data()
+
         summary = (
             "📦 Buyurtma ma’lumoti:\n"
             f"👤FIO: {data['name']}\n"
@@ -224,27 +236,7 @@ def register_user_handlers(
             f"💵Budjet: {data['budget']} som\n"
         )
         markup = location_button(data["location"][0], data["location"][1])
-
-        media_list = data.get("media", [])
-        if media_list:
-            if len(media_list) == 1:
-                media = media_list[0]
-                if media["type"] == "photo":
-                    await message.answer_photo(media["file_id"], caption=summary, reply_markup=markup)
-                else:
-                    await message.answer_video(media["file_id"], caption=summary, reply_markup=markup)
-            else:
-                input_media = []
-                for m in media_list:
-                    if m["type"] == "photo":
-                        input_media.append(InputMediaPhoto(media=m["file_id"]))
-                    else:
-                        input_media.append(InputMediaVideo(media=m["file_id"]))
-                input_media[0].caption = summary
-                await bot.send_media_group(chat_id=message.chat.id, media=input_media)
-        else:
-            await message.answer(summary, reply_markup=markup)
-
+        await message.answer(summary, reply_markup=markup)
         await message.answer("Yuborilsinmi?", reply_markup=confirm_keyboard())
         await state.set_state(UserOrder.confirm)
 

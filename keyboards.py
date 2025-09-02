@@ -120,6 +120,16 @@ def worker_actions_keyboard(order_id: int):
         ]
     )
 
+
+def location_keyboard():
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(
+        KeyboardButton(text="📍 Hozirgi joyim", request_location=True),
+        KeyboardButton(text="🗺 Kartadan tanlash")
+    )
+    return kb
+
+
 def choose_time_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
