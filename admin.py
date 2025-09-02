@@ -243,7 +243,7 @@ def register_admin_handlers(
                 first_name = user_data.get("first_name", "Noma’lum")
                 phone = user_data.get("phone", "Noma’lum")
 
-                txt.append(f"👤 {display} — ID: {user_id}, Ism: {first_name}, Tel: {phone}")
+                txt.append(f"👤 {display} Orqali bloklangan\n ID: {user_id},Username: {username}, Ism: {first_name}, Tel: {phone}")
 
         await message.answer("\n".join(txt))
 
