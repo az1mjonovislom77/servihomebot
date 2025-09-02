@@ -69,13 +69,25 @@ async def create_tables(conn):
 
 
 async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders, blocked_users, admins):
+    # Load blocked users first
+    blocked_rows = await conn.fetch('SELECT * FROM blocked_users')
+    for row in blocked_rows:
+        if row['username']:
+            blocked_users.add(row['username'].lower())
+        if row['user_id']:
+            blocked_users.add(row['user_id'])
+
     users = await conn.fetch('SELECT * FROM users')
     for row in users:
-        users_db[row['user_id']] = dict(row)
+        username_lower = (row['username'] or "").lower()
+        if row['user_id'] not in blocked_users and username_lower not in blocked_users:
+            users_db[row['user_id']] = dict(row)
 
     workers = await conn.fetch('SELECT * FROM workers')
     for row in workers:
-        workers_db[row['worker_id']] = dict(row)
+        username_lower = (row['username'] or "").lower()
+        if row['worker_id'] not in blocked_users and username_lower not in blocked_users:
+            workers_db[row['worker_id']] = dict(row)
 
     orders_query = await conn.fetch('SELECT * FROM orders')
     for row in orders_query:
@@ -93,13 +105,6 @@ async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders
         offers[row['order_id']][row['worker_id']] = row['price']
         if row['order_id'] in orders:
             orders[row['order_id']]['workers_accepted'].add(row['worker_id'])
-
-    blocked_rows = await conn.fetch('SELECT * FROM blocked_users')
-    for row in blocked_rows:
-        if row['username']:
-            blocked_users.add(row['username'].lower())
-        if row['user_id']:
-            blocked_users.add(row['user_id'])
 
     for row in await conn.fetch('SELECT * FROM admins'):
         admins.add(row['admin_id'])

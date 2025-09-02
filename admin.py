@@ -156,20 +156,30 @@ def register_admin_handlers(
         else:
             username = identifier.lstrip("@").lower()
 
+        # If username, try to find user_id
+        if username:
+            # Search in users_db
+            for uid, data in users_db.items():
+                if data.get("username", "").lower() == username:
+                    user_id = uid
+                    break
+            # If not found, search in workers_db
+            if not user_id:
+                for wid, data in workers_db.items():
+                    if data.get("username", "").lower() == username:
+                        user_id = wid
+                        break
+
+        # Pop from dicts if user_id found
+        if user_id:
+            users_db.pop(user_id, None)
+            workers_db.pop(user_id, None)
+
+        # Add to blocked, prefer user_id if found
         async with pool.acquire() as conn:
             await add_blocked(conn, user_id or username)
 
         blocked_users.add(user_id if user_id else username)
-
-        if user_id and user_id in users_db:
-            users_db.pop(user_id, None)
-            async with pool.acquire() as conn:
-                await delete_user(conn, user_id)
-
-        if user_id and user_id in workers_db:
-            workers_db.pop(user_id, None)
-            async with pool.acquire() as conn:
-                await delete_worker(conn, user_id)
 
         if user_id:
             try:
@@ -277,7 +287,7 @@ def register_admin_handlers(
                 txt.append(
                     f"👤 {display}\n"
                     f"ID: {user_id}\n"
-                    f"Ism: {user_data.get('first_name', 'Noma’lum')}\n"
+                    f"Ism: {user_data.get('first_name', 'Noma’lum') or user_data.get('name', 'Noma’lum')}\n"
                     f"Tel: {user_data.get('phone', 'Noma’lum')}\n"
                     f"Viloyat/Shahar: {user_data.get('region', 'Noma’lum')}/{user_data.get('city', 'Noma’lum')}\n"
                     f"Kasb: {user_data.get('profession', 'Noma’lum')}\n"
@@ -311,6 +321,23 @@ def register_admin_handlers(
             blocked_users.remove(target)
             async with pool.acquire() as conn:
                 await delete_blocked(conn, target)
+                # Add back to dicts if data exists in DB
+                if user_id:
+                    user_row = await conn.fetchrow("SELECT * FROM users WHERE user_id=$1", user_id)
+                    if user_row:
+                        users_db[user_id] = dict(user_row)
+                    worker_row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
+                    if worker_row:
+                        workers_db[user_id] = dict(worker_row)
+                elif username:
+                    user_row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
+                    if user_row:
+                        user_id = user_row['user_id']
+                        users_db[user_id] = dict(user_row)
+                    worker_row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
+                    if worker_row:
+                        user_id = worker_row['worker_id']
+                        workers_db[user_id] = dict(worker_row)
             await message.answer(f"✅ Foydalanuvchi {'@' + username if username else user_id} blokdan chiqarildi")
         else:
             await message.answer("⚠️ Bu foydalanuvchi bloklanmagan")
