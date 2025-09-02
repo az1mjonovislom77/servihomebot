@@ -282,7 +282,7 @@ def register_admin_handlers(
                     f"ID: {user_id}\n"
                     f"Tel: {user_data.get('phone', 'Noma’lum')}\n"
                     f"Viloyat/Shahar: {user_data.get('region', 'Noma’lum')}/{user_data.get('city', 'Noma’lum')}\n"
-                    f"Status: {status},\n"
+                    f"Status: {status}\n"
                     "---------------------------------"
                 )
 
