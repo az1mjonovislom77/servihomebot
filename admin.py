@@ -3,7 +3,8 @@ from keyboards import admin_worker_keyboard, remove_keyboard, cities_keyboard, r
     REGIONS, admin_keyboard, target_keyboard, filter_type_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from database import save_worker, delete_worker, delete_user, add_blocked, delete_blocked, add_admin, remove_admin
+from database import save_worker, delete_worker, delete_user, add_blocked, delete_blocked, add_admin, remove_admin, \
+    get_user, get_worker
 
 
 class FeedbackStates(StatesGroup):
@@ -207,43 +208,61 @@ def register_admin_handlers(
                 else:
                     username = identifier.lstrip("@").lower()
 
-                if user_id and user_id in users_db:
-                    user_data = users_db[user_id]
+                if user_id:
+                    user_data = await get_user(conn, user_id)
                 elif username:
-                    for uid, data in users_db.items():
-                        u_name = data.get("username", "").lower()
-                        if u_name == username:
-                            user_id = uid
-                            user_data = data
-                            break
+                    row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
+                    if row:
+                        user_id = row['user_id']
+                        user_data = dict(row)
 
-                if user_data is None:
-                    if user_id and user_id in workers_db:
-                        user_data = workers_db[user_id]
+                if not user_data:
+                    if user_id:
+                        user_data = await get_worker(conn, user_id)
                     elif username:
-                        for uid, data in workers_db.items():
-                            u_name = data.get("username", "").lower()
-                            if u_name == username:
-                                user_id = uid
-                                user_data = data
-                                break
+                        row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
+                        if row:
+                            user_id = row['worker_id']
+                            user_data = dict(row)
 
-                if user_data is None:
+                if not user_data:
                     try:
                         chat = await bot.get_chat(user_id or f"@{username}")
                         user_data = {
                             "first_name": chat.first_name or "Noma’lum",
-                            "phone": "Noma’lum"
+                            "phone": "Noma’lum",
+                            "region": "Noma’lum",
+                            "city": "Noma’lum",
+                            "profession": "Noma’lum",
+                            "approved": False,
+                            "username": chat.username or username
                         }
                         user_id = chat.id
                     except Exception:
-                        user_data = {"first_name": "Noma’lum", "phone": "Noma’lum"}
+                        user_data = {
+                            "first_name": "Noma’lum",
+                            "phone": "Noma’lum",
+                            "region": "Noma’lum",
+                            "city": "Noma’lum",
+                            "profession": "Noma’lum",
+                            "approved": False,
+                            "username": username
+                        }
 
-                display = f"@{username}" if username else f"{user_id}"
-                first_name = user_data.get("first_name", "Noma’lum")
-                phone = user_data.get("phone", "Noma’lum")
+                display = f"@{user_data.get('username')}" if user_data.get('username') else f"{user_id}"
+                status = "ADMIN👮" if user_id in admins else "USER👤"
+                approved = "Tasdiqlangan" if user_data.get("approved") else "Tasdiqlanmagan"
 
-                txt.append(f"👤 {display} Orqali bloklangan\n ID: {user_id},Username: {username}, Ism: {first_name}, Tel: {phone}")
+                txt.append(
+                    f"👤 {display}\n"
+                    f"ID: {user_id}\n"
+                    f"Ism: {user_data.get('first_name')}\n"
+                    f"Tel: {user_data.get('phone', 'Noma’lum')}\n"
+                    f"Viloyat/Shahar: {user_data.get('region', 'Noma’lum')}/{user_data.get('city', 'Noma’lum')}\n"
+                    f"Kasb: {user_data.get('profession', 'Noma’lum')}\n"
+                    f"Status: {status}, {approved}\n"
+                    "---------------------------------"
+                )
 
         await message.answer("\n".join(txt))
 

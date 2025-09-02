@@ -94,7 +94,8 @@ async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders
         if row['order_id'] in orders:
             orders[row['order_id']]['workers_accepted'].add(row['worker_id'])
 
-    for row in await conn.fetch('SELECT * FROM blocked_users'):
+    blocked_rows = await conn.fetch('SELECT * FROM blocked_users')
+    for row in blocked_rows:
         if row['username']:
             blocked_users.add(row['username'].lower())
         if row['user_id']:
@@ -218,7 +219,6 @@ async def update_worker(conn, worker_id, **kwargs):
 
 async def update_order(conn, order_id, **kwargs):
     await _update_dynamic(conn, "orders", "order_id", order_id, kwargs)
-
 
 async def _update_dynamic(conn, table, key, key_val, fields: dict):
     if not fields:

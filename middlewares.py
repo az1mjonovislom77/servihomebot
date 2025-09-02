@@ -17,7 +17,6 @@ class BlockMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         if user_id in self.blocked_users or (username and username in self.blocked_users):
-            # respond accordingly
             if isinstance(event, Message):
                 await event.answer('🚫 Siz bloklandingiz, botdan foydalana olmaysiz')
             elif isinstance(event, CallbackQuery):
