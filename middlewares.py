@@ -1,32 +1,27 @@
-
 from aiogram import BaseMiddleware
-from aiogram.types import Message
-
+from aiogram.types import Message, CallbackQuery
 
 class BlockMiddleware(BaseMiddleware):
     def __init__(self, blocked_users: set):
         super().__init__()
         self.blocked_users = blocked_users
-        self.prev_status = {}
 
-    async def __call__(self, handler, event: Message, data: dict):
-        if not isinstance(event, Message):
+    async def __call__(self, handler, event, data):
+        if isinstance(event, Message):
+            user_id = event.from_user.id
+            username = event.from_user.username.lower() if event.from_user.username else None
+        elif isinstance(event, CallbackQuery):
+            user_id = event.from_user.id
+            username = event.from_user.username.lower() if event.from_user.username else None
+        else:
             return await handler(event, data)
 
-        user_id = event.from_user.id
-        username = event.from_user.username.lower() if event.from_user.username else None
-
-        is_blocked = username in self.blocked_users if username else False
-        was_blocked = self.prev_status.get(user_id)
-
-        if is_blocked:
-            if was_blocked is not True:
+        if user_id in self.blocked_users or (username and username in self.blocked_users):
+            # respond accordingly
+            if isinstance(event, Message):
                 await event.answer('🚫 Siz bloklandingiz, botdan foydalana olmaysiz')
-            self.prev_status[user_id] = True
+            elif isinstance(event, CallbackQuery):
+                await event.answer('🚫 Siz bloklandingiz, botdan foydalana olmaysiz', show_alert=True)
             return
 
-        if was_blocked is True and not is_blocked:
-            await event.answer('✅ Siz blokdan chiqarildingiz, endi botdan foydalanishingiz mumkin')
-
-        self.prev_status[user_id] = False
         return await handler(event, data)
