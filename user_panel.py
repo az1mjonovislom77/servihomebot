@@ -134,7 +134,7 @@ def register_user_handlers(
 
     async def on_user_description(message: Message, state: FSMContext):
         await state.update_data(description=message.text.strip())
-        await message.answer("Ishchi ishni qachondan boshlashi kerak?", reply_markup=choose_time_keyboard())
+        await message.answer("🕒Ishchi ishni qachondan boshlashi kerak?", reply_markup=choose_time_keyboard())
         await state.set_state(UserOrder.time)
     dp.message.register(on_user_description, StateFilter(UserOrder.description))
 
@@ -215,13 +215,13 @@ def register_user_handlers(
         data = await state.get_data()
         summary = (
             "📦 Buyurtma ma’lumoti:\n"
-            f"FIO: {data['name']}\n"
-            f"Telefon: (tanlangandan keyin beriladi)\n"
-            f"Manzil: {data['region']} / {data['city']}\n"
-            f"Xizmat: {data['service']}\n"
-            f"Tavsif: {data['description']}\n"
-            f"Vaqt: {data['time']}\n"
-            f"Budjet: {data['budget']} som\n"
+            f"👤FIO: {data['name']}\n"
+            f"📞Telefon: (tanlangandan keyin beriladi)\n"
+            f"📍Manzil: {data['region']} / {data['city']}\n"
+            f"🛠️Xizmat: {data['service']}\n"
+            f"💭Tavsif: {data['description']}\n"
+            f"🕒Vaqt: {data['time']}\n"
+            f"💵Budjet: {data['budget']} som\n"
         )
         markup = location_button(data["location"][0], data["location"][1])
 
@@ -292,13 +292,13 @@ def register_user_handlers(
             user_phone = users_db.get(message.from_user.id, {}).get("phone", "N/A")
             text = (
                 "📢 Yangi buyurtma (kuzatuv):\n"
-                f"User: @{_safe_username(message)}\n"
-                f"Hudud: {data['region']} / {data['city']}\n"
-                f"Xizmat: {data['service']}\n"
-                f"Tavsif: {data['description']}\n"
-                f"Vaqt: {data['time']}\n"
-                f"Budjet: {data['budget']} som\n"
-                f"Nomer: {user_phone}\n"
+                f"👤User: @{_safe_username(message)}\n"
+                f"📍Hudud: {data['region']} / {data['city']}\n"
+                f"🛠️Xizmat: {data['service']}\n"
+                f"💭Tavsif: {data['description']}\n"
+                f"🕒Vaqt: {data['time']}\n"
+                f"💵Budjet: {data['budget']} som\n"
+                f"📞Nomer: {user_phone}\n"
             )
             markup = location_button(data["location"][0], data["location"][1])
 
@@ -380,12 +380,12 @@ def register_user_handlers(
             else:
                 notif_text = (
                     f"🆕 Yangi buyurtma!\n"
-                    f"Hudud: {order['region']} / {order['city']}\n"
-                    f"Xizmat: {order['service']}\n"
-                    f"Tavsif: {order['description']}\n"
-                    f"Vaqt: {order['time']}\n"
-                    f"Budjet: {order['budget']} som\n"
-                    f"Buyurtmachi: {order['name']}\n"
+                    f"📍Hudud: {order['region']} / {order['city']}\n"
+                    f"🛠️Xizmat: {order['service']}\n"
+                    f"💭Tavsif: {order['description']}\n"
+                    f"🕒Vaqt: {order['time']}\n"
+                    f"💵Budjet: {order['budget']} som\n"
+                    f"👤Buyurtmachi: {order['name']}\n"
                 )
                 location_markup = location_button(order["location"][0], order["location"][1])
                 action_markup = worker_actions_keyboard(order_id)
@@ -394,7 +394,7 @@ def register_user_handlers(
                     if order.get("media"):
                         media_list = order["media"]
 
-                        if len(media_list) > 1:  # Bir nechta fayl bolsa
+                        if len(media_list) > 1:
                             album = []
                             for i, m in enumerate(media_list):
                                 caption = notif_text if i == 0 else None
