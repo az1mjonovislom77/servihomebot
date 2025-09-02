@@ -1,4 +1,3 @@
-
 from aiogram.types import (
     ReplyKeyboardMarkup, KeyboardButton,
     InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
@@ -118,6 +117,17 @@ def worker_actions_keyboard(order_id: int):
             [
                 InlineKeyboardButton(text="✅ Qabul qilish", callback_data=f"w:accept:{order_id}"),
                 InlineKeyboardButton(text="💰 Narx belgilash", callback_data=f"set_price:{order_id}")]
+        ]
+    )
+
+def choose_time_keyboard():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Bugun", callback_data="time:bugun"),
+                InlineKeyboardButton(text="Ertaga", callback_data="time:ertaga"),
+                InlineKeyboardButton(text="Hafta davomida", callback_data="time:hafta")
+            ]
         ]
     )
 

@@ -37,6 +37,7 @@ async def create_tables(conn):
             city TEXT,
             service TEXT,
             description TEXT,
+            time TEXT,
             budget BIGINT,
             latitude DOUBLE PRECISION,
             longitude DOUBLE PRECISION,
@@ -135,17 +136,17 @@ async def save_order(conn, order_id, data):
 
     await conn.execute('''
         INSERT INTO orders (order_id,user_id,username,name,region,city,
-                            service,description,budget,latitude,longitude,
+                            service,description,time,budget,latitude,longitude,
                             chosen_worker,media_type,media_file_id)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
         ON CONFLICT (order_id) DO UPDATE SET
             user_id=$2, username=$3, name=$4, region=$5, city=$6,
-            service=$7, description=$8, budget=$9,
-            latitude=$10, longitude=$11, chosen_worker=$12,
-            media_type=$13, media_file_id=$14
+            service=$7, description=$8, time=$9, budget=$10,
+            latitude=$11, longitude=$12, chosen_worker=$13,
+            media_type=$14, media_file_id=$15
     ''', order_id, data['user_id'], data.get('username'), data['name'],
          data['region'], data['city'], data['service'], data['description'],
-         data['budget'], data['location'][0], data['location'][1],
+         data.get('time'), data['budget'], data['location'][0], data['location'][1],
          data.get('chosen_worker'), media_type, media_file_id)
 
 async def delete_order(conn, order_id):

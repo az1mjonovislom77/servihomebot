@@ -9,7 +9,7 @@ from keyboards import (
     start_keyboard, phone_request_keyboard, regions_keyboard, cities_keyboard, services_keyboard,
     location_request_keyboard, confirm_keyboard, remove_keyboard, skip_keyboard,
     REGIONS, SERVICES, worker_actions_keyboard, admin_user_keyboard, choose_worker_keyboard,
-    location_button
+    location_button, choose_time_keyboard
 )
 from database import save_user, save_order, update_order
 
@@ -21,6 +21,7 @@ class UserOrder(StatesGroup):
     city = State()
     service = State()
     description = State()
+    time = State()
     media = State()
     budget = State()
     location = State()
@@ -133,9 +134,19 @@ def register_user_handlers(
 
     async def on_user_description(message: Message, state: FSMContext):
         await state.update_data(description=message.text.strip())
-        await message.answer("📸 Rasm yoki 🎥 video yuboring (ixtiyoriy, hajmi 15 MB dan oshmasin):", reply_markup=skip_keyboard())
-        await state.set_state(UserOrder.media)
+        await message.answer("Ishchi ishni qachondan boshlashi kerak?", reply_markup=choose_time_keyboard())
+        await state.set_state(UserOrder.time)
     dp.message.register(on_user_description, StateFilter(UserOrder.description))
+
+    async def on_user_time_choice(callback: CallbackQuery, state: FSMContext):
+        if not callback.data.startswith("time:"):
+            return
+        time_choice = callback.data.split(":")[1]
+        await state.update_data(time=time_choice)
+        await callback.message.answer("📸 Rasm yoki 🎥 video yuboring (ixtiyoriy, hajmi 15 MB dan oshmasin):", reply_markup=skip_keyboard())
+        await state.set_state(UserOrder.media)
+        await callback.answer()
+    dp.callback_query.register(on_user_time_choice, StateFilter(UserOrder.time), F.data.startswith("time:"))
 
     MAX_FILES = 2
 
@@ -209,6 +220,7 @@ def register_user_handlers(
             f"Manzil: {data['region']} / {data['city']}\n"
             f"Xizmat: {data['service']}\n"
             f"Tavsif: {data['description']}\n"
+            f"Vaqt: {data['time']}\n"
             f"Budjet: {data['budget']} som\n"
         )
         markup = location_button(data["location"][0], data["location"][1])
@@ -262,6 +274,7 @@ def register_user_handlers(
             "city": data["city"],
             "service": data["service"],
             "description": data["description"],
+            "time": data["time"],
             "budget": data["budget"],
             "location": data["location"],
             "chosen_worker": None,
@@ -282,8 +295,9 @@ def register_user_handlers(
                 f"User: @{_safe_username(message)}\n"
                 f"Hudud: {data['region']} / {data['city']}\n"
                 f"Xizmat: {data['service']}\n"
-                f"Budjet: {data['budget']} som\n"
                 f"Tavsif: {data['description']}\n"
+                f"Vaqt: {data['time']}\n"
+                f"Budjet: {data['budget']} som\n"
                 f"Nomer: {user_phone}\n"
             )
             markup = location_button(data["location"][0], data["location"][1])
@@ -368,8 +382,9 @@ def register_user_handlers(
                     f"🆕 Yangi buyurtma!\n"
                     f"Hudud: {order['region']} / {order['city']}\n"
                     f"Xizmat: {order['service']}\n"
-                    f"Budjet: {order['budget']} som\n"
                     f"Tavsif: {order['description']}\n"
+                    f"Vaqt: {order['time']}\n"
+                    f"Budjet: {order['budget']} som\n"
                     f"Buyurtmachi: {order['name']}\n"
                 )
                 location_markup = location_button(order["location"][0], order["location"][1])
