@@ -56,7 +56,9 @@ async def create_tables(conn):
     ''')
     await conn.execute('''
         CREATE TABLE IF NOT EXISTS blocked_users (
-            username TEXT PRIMARY KEY
+            id BIGSERIAL PRIMARY KEY,
+            username TEXT UNIQUE,
+            user_id BIGINT UNIQUE
         );
     ''')
     await conn.execute('''
@@ -93,7 +95,10 @@ async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders
             orders[row['order_id']]['workers_accepted'].add(row['worker_id'])
 
     for row in await conn.fetch('SELECT * FROM blocked_users'):
-        blocked_users.add(row['username'])
+        if row['username']:
+            blocked_users.add(row['username'].lower())
+        if row['user_id']:
+            blocked_users.add(row['user_id'])
 
     for row in await conn.fetch('SELECT * FROM admins'):
         admins.add(row['admin_id'])
@@ -167,11 +172,26 @@ async def save_offer(conn, order_id, worker_id, price=None):
     ''', order_id, worker_id, price)
 
 
-async def add_blocked(conn, username):
-    await conn.execute('INSERT INTO blocked_users (username) VALUES ($1) ON CONFLICT DO NOTHING', username)
+async def add_blocked(conn, identifier):
+    if isinstance(identifier, int):
+        await conn.execute('''
+            INSERT INTO blocked_users (user_id) VALUES ($1)
+            ON CONFLICT (user_id) DO NOTHING
+        ''', identifier)
+    else:
+        username = identifier.lower()
+        await conn.execute('''
+            INSERT INTO blocked_users (username) VALUES ($1)
+            ON CONFLICT (username) DO NOTHING
+        ''', username)
 
-async def delete_blocked(conn, username):
-    await conn.execute('DELETE FROM blocked_users WHERE username=$1', username)
+async def delete_blocked(conn, identifier):
+    if isinstance(identifier, int):
+        await conn.execute('DELETE FROM blocked_users WHERE user_id=$1', identifier)
+    else:
+        username = identifier.lower()
+        await conn.execute('DELETE FROM blocked_users WHERE username=$1', username)
+
 
 async def add_admin(conn, admin_id):
     await conn.execute('INSERT INTO admins (admin_id) VALUES ($1) ON CONFLICT DO NOTHING', admin_id)

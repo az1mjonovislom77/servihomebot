@@ -140,39 +140,46 @@ def register_admin_handlers(
     async def block_user(message: types.Message):
         if not is_admin(message):
             return
-        try:
-            username = message.text.split(" ")[1].lstrip("@").lower()
-        except:
-            await message.answer("⚠️ Foydalanish: /block <username>")
+
+        args = message.text.split(" ", 1)
+        if len(args) < 2:
+            await message.answer("⚠️ Foydalanish: /block <user_id yoki username>")
             return
 
-        blocked_users.add(username)
+        identifier = args[1].strip()
+        user_id = None
+        username = None
+
+        if identifier.isdigit():
+            user_id = int(identifier)
+        else:
+            username = identifier.lstrip("@").lower()
+
         async with pool.acquire() as conn:
-            await add_blocked(conn, username)
+            await add_blocked(conn, user_id or username)
 
-        to_remove = []
-        for user_id in list(users_db.keys()):
-            try:
-                chat = await bot.get_chat(user_id)
-                if chat.username and chat.username.lower() == username:
-                    to_remove.append(user_id)
-            except:
-                pass
+        blocked_users.add(user_id if user_id else username)
 
-        for user_id in to_remove:
+        if user_id and user_id in users_db:
             users_db.pop(user_id, None)
             async with pool.acquire() as conn:
                 await delete_user(conn, user_id)
-            if user_id in workers_db:
-                workers_db.pop(user_id, None)
-                async with pool.acquire() as conn:
-                    await delete_worker(conn, user_id)
+
+        if user_id and user_id in workers_db:
+            workers_db.pop(user_id, None)
+            async with pool.acquire() as conn:
+                await delete_worker(conn, user_id)
+
+        if user_id:
             try:
-                await bot.send_message(user_id, "🚫 Siz admin tomonidan bloklandingiz va botdan foydalana olmaysiz")
+                await bot.send_message(
+                    user_id,
+                    "🚫 Siz admin tomonidan bloklandingiz va botdan foydalana olmaysiz"
+                )
             except:
                 pass
 
-        await message.answer(f"🚫 User @{username} bloklandi")
+        await message.answer(f"🚫 Foydalanuvchi {'@' + username if username else user_id} bloklandi")
 
     async def show_blocked_users(message: types.Message):
         if not is_admin(message):
@@ -190,25 +197,33 @@ def register_admin_handlers(
             txt.append(f"👤 @{username}")
         await message.answer("\n".join(txt))
 
-
-
     async def unblock_user(message: types.Message):
         if not is_admin(message):
             return
-        try:
-            username = message.text.split(" ")[1].lstrip("@").lower()
-        except:
-            await message.answer("⚠️ Foydalanish: /unblock <username>")
+
+        args = message.text.split(" ", 1)
+        if len(args) < 2:
+            await message.answer("⚠️ Foydalanish: /unblock <user_id yoki username>")
             return
 
-        if username in blocked_users:
-            blocked_users.remove(username)
-            async with pool.acquire() as conn:
-                await delete_blocked(conn, username)
-            await message.answer(f"✅ User @{username} blokdan chiqarildi")
-        else:
-            await message.answer("⚠️ Bu user bloklanmagan")
+        identifier = args[1].strip()
+        user_id = None
+        username = None
 
+        if identifier.isdigit():
+            user_id = int(identifier)
+        else:
+            username = identifier.lstrip("@").lower()
+
+        target = user_id if user_id else username
+
+        if target in blocked_users:
+            blocked_users.remove(target)
+            async with pool.acquire() as conn:
+                await delete_blocked(conn, target)
+            await message.answer(f"✅ Foydalanuvchi {'@' + username if username else user_id} blokdan chiqarildi")
+        else:
+            await message.answer("⚠️ Bu foydalanuvchi bloklanmagan")
 
     async def process_worker_actions(call: types.CallbackQuery):
         if not is_admin(call):
