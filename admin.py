@@ -233,7 +233,7 @@ def register_admin_handlers(
 
                 display = f"@{username}" if username else f"{user_id}"
                 txt.append(
-                    f"👤 {display} — ID: {user_id}, Ism: {user_data.get('first_name')}, Tel: {user_data.get('phone', 'Nomalum')}")
+                    f"👤 ID: {display}, Ism: {user_data.get('first_name')}, Tel: {user_data.get('phone', 'Nomalum')}")
 
         await message.answer("\n".join(txt))
 
