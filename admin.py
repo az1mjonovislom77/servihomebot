@@ -260,7 +260,6 @@ def register_admin_handlers(
                     try:
                         chat = await bot.get_chat(user_id or f"@{username}")
                         user_data = {
-                            "first_name": chat.first_name or "Noma’lum",
                             "phone": "Noma’lum",
                             "region": "Noma’lum",
                             "city": "Noma’lum",
@@ -271,7 +270,6 @@ def register_admin_handlers(
                         user_id = chat.id
                     except Exception:
                         user_data = {
-                            "first_name": "Noma’lum",
                             "phone": "Noma’lum",
                             "region": "Noma’lum",
                             "city": "Noma’lum",
@@ -287,7 +285,6 @@ def register_admin_handlers(
                 txt.append(
                     f"👤 {display}\n"
                     f"ID: {user_id}\n"
-                    f"Ism: {user_data.get('first_name', 'Noma’lum') or user_data.get('name', 'Noma’lum')}\n"
                     f"Tel: {user_data.get('phone', 'Noma’lum')}\n"
                     f"Viloyat/Shahar: {user_data.get('region', 'Noma’lum')}/{user_data.get('city', 'Noma’lum')}\n"
                     f"Kasb: {user_data.get('profession', 'Noma’lum')}\n"
