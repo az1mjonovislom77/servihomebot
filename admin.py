@@ -275,14 +275,12 @@ def register_admin_handlers(
                         }
 
                 display = f"@{user_data.get('username')}" if user_data.get('username') else f"{user_id}"
-                status = "ADMIN👮" if user_id in admins else "USER👤"
 
                 txt.append(
                     f"👤 {display}\n"
                     f"ID: {user_id}\n"
                     f"Tel: {user_data.get('phone', 'Noma’lum')}\n"
                     f"Viloyat/Shahar: {user_data.get('region', 'Noma’lum')}/{user_data.get('city', 'Noma’lum')}\n"
-                    f"Status: {status}\n"
                     "---------------------------------"
                 )
 
