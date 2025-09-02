@@ -51,7 +51,7 @@ def location_request_keyboard():
     kb = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📍 Hozirgi joyim", request_location=True)],
-            [KeyboardButton(text="🗺 Kartadan tanlash")]
+            [KeyboardButton(text="📌 Boshqa lokatsiya yuborish")]
         ],
         resize_keyboard=True
     )

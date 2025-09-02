@@ -209,33 +209,38 @@ def register_user_handlers(
     async def on_user_location(message: Message, state: FSMContext):
         data = await state.get_data()
 
-        if message.text == "🗺 Kartadan tanlash":
+        if message.text == "📌 Boshqa lokatsiya yuborish":
             await message.answer(
-                "📍 Iltimos, kartadan joylashuvni tanlang. Marker qo'yganingizda 'Lokatsiyani yuborish' tugmasini bosing.",
-                reply_markup=None
+                "📍 Iltimos, boshqa lokatsiyani yuboring.\n"
+                "Telegram orqali lokatsiyani yuborish uchun 📎 tugmasini bosing va 'Location' ni tanlang.",
+                reply_markup=location_request_keyboard()
             )
             return
 
         if not message.location:
             await message.answer(
-                "⚠️ Iltimos, GPS orqali yoki kartadan lokatsiyani yuboring.",
+                "⚠️ Iltimos, tugmani bosib yoki 📎 orqali lokatsiyani yuboring.",
                 reply_markup=location_request_keyboard()
             )
             return
 
-        await state.update_data(location=(message.location.latitude, message.location.longitude))
+        latitude = message.location.latitude
+        longitude = message.location.longitude
+        await state.update_data(location=(latitude, longitude))
 
         summary = (
             "📦 Buyurtma ma’lumoti:\n"
-            f"👤FIO: {data['name']}\n"
+            f"👤FIO: {data.get('name', 'N/A')}\n"
             f"📞Telefon: (tanlangandan keyin beriladi)\n"
-            f"📍Manzil: {data['region']} / {data['city']}\n"
-            f"🛠️Xizmat: {data['service']}\n"
-            f"💭Tavsif: {data['description']}\n"
-            f"🕒Vaqt: {data['time']}\n"
-            f"💵Budjet: {data['budget']} som\n"
+            f"📍Manzil: {data.get('region', 'N/A')} / {data.get('city', 'N/A')}\n"
+            f"🛠️Xizmat: {data.get('service', 'N/A')}\n"
+            f"💭Tavsif: {data.get('description', 'N/A')}\n"
+            f"🕒Vaqt: {data.get('time', 'N/A')}\n"
+            f"💵Budjet: {data.get('budget', 'N/A')} som\n"
         )
-        markup = location_button(data["location"][0], data["location"][1])
+
+        markup = location_button(latitude, longitude)
+
         await message.answer(summary, reply_markup=markup)
         await message.answer("Yuborilsinmi?", reply_markup=confirm_keyboard())
         await state.set_state(UserOrder.confirm)
