@@ -50,8 +50,7 @@ def phone_request_keyboard():
 def location_request_keyboard():
     kb = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📍 Hozirgi joyim", request_location=True)],
-            [KeyboardButton(text="📌 Boshqa lokatsiya yuborish")]
+            [KeyboardButton(text="📍 Hozirgi joyim", request_location=True), KeyboardButton(text="Boshqa lokatsiya yuborish")]
         ],
         resize_keyboard=True
     )
