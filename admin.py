@@ -189,14 +189,13 @@ def register_admin_handlers(
         if not blocked_users:
             await message.answer(
                 "♻ Bloklangan userlar yo'q\n\n"
-                "Block va Unblock qilish uchun: \n"
+                "Block va Unblock qilish uchun:\n"
                 "/block username yoki user_id\n"
                 "/unblock username yoki user_id\n"
             )
             return
 
         txt = ["♻ Bloklangan userlar:"]
-
         async with pool.acquire() as conn:
             for identifier in blocked_users:
                 user_id = None
@@ -208,22 +207,44 @@ def register_admin_handlers(
                 else:
                     username = identifier.lstrip("@").lower()
 
-                if user_id:
-                    user_data = await get_user(conn, user_id)
+                if user_id and user_id in users_db:
+                    user_data = users_db[user_id]
                 elif username:
-                    row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
-                    if row:
-                        user_id = row['user_id']
-                        user_data = dict(row)
+                    for uid, data in users_db.items():
+                        if data.get("username", "").lower() == username:
+                            user_id = uid
+                            user_data = data
+                            break
+
+                if not user_data:
+                    if user_id and user_id in workers_db:
+                        user_data = workers_db[user_id]
+                    elif username:
+                        for wid, data in workers_db.items():
+                            if data.get("username", "").lower() == username:
+                                user_id = wid
+                                user_data = data
+                                break
 
                 if not user_data:
                     if user_id:
-                        user_data = await get_worker(conn, user_id)
-                    elif username:
-                        row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
+                        row = await conn.fetchrow("SELECT * FROM users WHERE user_id=$1", user_id)
                         if row:
-                            user_id = row['worker_id']
                             user_data = dict(row)
+                        else:
+                            row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
+                            if row:
+                                user_data = dict(row)
+                    elif username:
+                        row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
+                        if row:
+                            user_id = row['user_id']
+                            user_data = dict(row)
+                        else:
+                            row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
+                            if row:
+                                user_id = row['worker_id']
+                                user_data = dict(row)
 
                 if not user_data:
                     try:
@@ -256,7 +277,7 @@ def register_admin_handlers(
                 txt.append(
                     f"👤 {display}\n"
                     f"ID: {user_id}\n"
-                    f"Ism: {user_data.get('first_name')}\n"
+                    f"Ism: {user_data.get('first_name', 'Noma’lum')}\n"
                     f"Tel: {user_data.get('phone', 'Noma’lum')}\n"
                     f"Viloyat/Shahar: {user_data.get('region', 'Noma’lum')}/{user_data.get('city', 'Noma’lum')}\n"
                     f"Kasb: {user_data.get('profession', 'Noma’lum')}\n"
