@@ -202,7 +202,7 @@ def register_user_handlers(
             await message.answer("⚠️ Faqat raqam kiriting (masalan: 150000)")
             return
         await state.update_data(budget=int(message.text))
-        await message.answer("📍 Iltimos, lokatsiyani yuboring:", reply_markup=location_request_keyboard())
+        await message.answer("📍 Iltimos, lokatsiyani yuboring:", reply_markup=location_keyboard())
         await state.set_state(UserOrder.location)
     dp.message.register(on_user_budget, StateFilter(UserOrder.budget))
 
