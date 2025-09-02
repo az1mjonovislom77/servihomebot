@@ -263,8 +263,6 @@ def register_admin_handlers(
                             "phone": "Noma’lum",
                             "region": "Noma’lum",
                             "city": "Noma’lum",
-                            "profession": "Noma’lum",
-                            "approved": False,
                             "username": chat.username or username
                         }
                         user_id = chat.id
@@ -273,22 +271,18 @@ def register_admin_handlers(
                             "phone": "Noma’lum",
                             "region": "Noma’lum",
                             "city": "Noma’lum",
-                            "profession": "Noma’lum",
-                            "approved": False,
                             "username": username
                         }
 
                 display = f"@{user_data.get('username')}" if user_data.get('username') else f"{user_id}"
                 status = "ADMIN👮" if user_id in admins else "USER👤"
-                approved = "Tasdiqlangan" if user_data.get("approved") else "Tasdiqlanmagan"
 
                 txt.append(
                     f"👤 {display}\n"
                     f"ID: {user_id}\n"
                     f"Tel: {user_data.get('phone', 'Noma’lum')}\n"
                     f"Viloyat/Shahar: {user_data.get('region', 'Noma’lum')}/{user_data.get('city', 'Noma’lum')}\n"
-                    f"Kasb: {user_data.get('profession', 'Noma’lum')}\n"
-                    f"Status: {status}, {approved}\n"
+                    f"Status: {status},\n"
                     "---------------------------------"
                 )
 
