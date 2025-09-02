@@ -188,8 +188,8 @@ def register_admin_handlers(
         if not blocked_users:
             await message.answer("♻ Bloklangan userlar yoq\n\n"
                                  "Block va Unblock qilish uchun korsatilganidek yozing‼️ \n"
-                                 "/block username\n"
-                                 "/unblock username\n")
+                                 "/block username yoki user_id\n"
+                                 "/unblock username yoki user_id\n")
             return
 
         txt = ["♻ Bloklangan userlar:"]
