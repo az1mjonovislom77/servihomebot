@@ -211,7 +211,7 @@ def register_user_handlers(
 
         if message.text == "Boshqa lokatsiya yuborish":
             await message.answer(
-                "📍 Iltimos, boshqa lokatsiyani yuboring.\n"
+                "📍 Iltimos, boshqa lokatsiyani yuboring.\n\n"
                 "Telegram orqali lokatsiyani yuborish uchun 📎 tugmasini bosing va 'Location' ni tanlang.",
                 reply_markup=remove_keyboard()
             )
