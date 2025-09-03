@@ -517,9 +517,8 @@ def register_user_handlers(
             return
 
         offer = offers.get(order_id, {}).get(worker_id, {})
-        price = offer.get('price') or order["budget"]
+        price = offer.get('price') if offer.get('price') is not None else order["budget"]
         proposed_time = offer.get('proposed_time')
-
         order["workers_accepted"].add(worker_id)
 
         text = (
@@ -527,15 +526,15 @@ def register_user_handlers(
             f"👤 Ism: {worker['name']}\n"
             f"📍 Hudud: {worker['region']}, {worker['city']}\n"
             f"🔧 Kasb: {worker['profession']}\n"
+            f"💰 Taklif qilgan narx: {price} som\n"
         )
-        if offer.get('price') is not None:
-            text += f"💰 Taklif qilgan narx: {offer['price']} som\n"
         if proposed_time:
             text += f"🕒 Taklif qilgan vaqt: {proposed_time}\n"
+
         await bot.send_message(
             order["user_id"],
             text,
-            reply_markup=choose_worker_keyboard(worker_id, order_id, str(offer.get('price')) if offer.get('price') is not None else None)
+            reply_markup=choose_worker_keyboard(worker_id, order_id, str(price))
         )
 
         for admin_id in admins:

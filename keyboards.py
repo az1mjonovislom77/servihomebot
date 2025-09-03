@@ -126,9 +126,6 @@ def worker_actions_keyboard(order_id: int):
     )
 
 
-
-
-
 def choose_time_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
