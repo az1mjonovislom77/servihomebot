@@ -45,14 +45,14 @@ async def main():
         await load_from_db(
             conn,
             users_db,
+            pending_users,
             workers_db,
+            pending_workers,
             orders,
             offers,
             chosen_orders,
             blocked_users,
-            admins,
-            pending_workers,
-            pending_users
+            admins
         )
 
     async def cmd_start(message: types.Message):
