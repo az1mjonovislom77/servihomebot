@@ -141,12 +141,11 @@ def choose_time_keyboard():
     )
 
 def choose_worker_keyboard(worker_id: int, order_id: int, price: str | None = None):
-    label = "✅ Tanlash" + (f" ({price} som)" if price else "")
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text=label, callback_data=f"choose:{worker_id}:{order_id}"),
+                InlineKeyboardButton(text="✅ Tanlash", callback_data=f"choose:{worker_id}:{order_id}"),
             ]
         ]
     )
