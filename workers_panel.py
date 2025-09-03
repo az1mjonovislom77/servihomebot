@@ -212,7 +212,7 @@ def register_worker_handlers(
         try:
             price = int(message.text.strip())
         except ValueError:
-            await message.answer('❌ Faqat raqam kiriting! Masalan(150 000)')
+            await message.answer('❌ Faqat raqam kiriting! Masalan(150000)')
             return
         worker_id = message.from_user.id
         if order_id not in offers:
