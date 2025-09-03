@@ -133,9 +133,9 @@ def choose_time_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="Bugun", callback_data="time:bugun"),
-                InlineKeyboardButton(text="Ertaga", callback_data="time:ertaga"),
-                InlineKeyboardButton(text="Hafta davomida", callback_data="time:hafta")
+                InlineKeyboardButton(text="Bugun", callback_data="time:Bugun"),
+                InlineKeyboardButton(text="Ertaga", callback_data="time:Ertaga"),
+                InlineKeyboardButton(text="Hafta davomida", callback_data="time:Hafta davomida")
             ]
         ]
     )
