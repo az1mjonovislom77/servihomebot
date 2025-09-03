@@ -11,8 +11,7 @@ from keyboards import (
     REGIONS, SERVICES, worker_actions_keyboard, admin_user_keyboard, choose_worker_keyboard,
     location_button, choose_time_keyboard
 )
-from database import save_user, save_order, update_order, save_pending_user, delete_pending_user
-
+from database import save_user, save_order, update_order, save_pending_user, delete_pending_user, save_pending_order
 
 class UserOrder(StatesGroup):
     contact = State()
@@ -283,7 +282,7 @@ def register_user_handlers(
 
         order_id = next(order_id_counter)
         data = await state.get_data()
-        orders[order_id] = {
+        order_data = {
             "order_id": order_id,
             "user_id": message.from_user.id,
             "username": message.from_user.username,
@@ -300,14 +299,18 @@ def register_user_handlers(
             "media": data.get("media")
         }
 
+        orders[order_id] = order_data
+
         async with pool.acquire() as conn:
-            await save_order(conn, order_id, orders[order_id])
+            if message.from_user.id in users_db:
+                await save_order(conn, order_id, order_data)
+            else:
+                await save_pending_order(conn, order_id, order_data)
 
         offers[order_id] = {}
 
-
         for admin_id in admins:
-            user_data = pending_users.get(message.from_user.id) or users_db.get(message.from_user.id) or {}
+            user_data = pending_users.get(message.from_user.id, {}) or users_db.get(message.from_user.id, {})
             user_phone = user_data.get("phone", "N/A")
             text = (
                 "📢 Yangi buyurtma (kuzatuv):\n"
@@ -387,13 +390,15 @@ def register_user_handlers(
 
         elif data.startswith("admin_approve"):
             user_id = order["user_id"]
-            if user_id in pending_users:
-                user_data = pending_users.pop(user_id)
-                users_db[user_id] = user_data
-                async with pool.acquire() as conn:
+            was_pending = user_id in pending_users
+            async with pool.acquire() as conn:
+                if was_pending:
+                    user_data = pending_users.pop(user_id)
+                    users_db[user_id] = user_data
                     await save_user(conn, user_id, user_data)
                     await delete_pending_user(conn, user_id)
-
+                    await conn.execute("DELETE FROM pending_orders WHERE order_id=$1", order_id)
+                    await save_order(conn, order_id, order)
             matched_workers = [
                 (worker_id, worker) for worker_id, worker in workers_db.items()
                 if worker.get("approved") and
@@ -456,10 +461,14 @@ def register_user_handlers(
             await callback.answer("✅ Buyurtma ishchilarga yuborildi", show_alert=True)
 
         elif data.startswith("admin_reject"):
+            user_id = order["user_id"]
             await bot.send_message(order["user_id"], "❌ Sizning buyurtmangiz admin tomonidan rad etildi")
             orders.pop(order_id, None)
             async with pool.acquire() as conn:
-                await conn.execute("DELETE FROM orders WHERE order_id=$1", order_id)
+                if user_id in users_db:
+                    await conn.execute("DELETE FROM orders WHERE order_id=$1", order_id)
+                else:
+                    await conn.execute("DELETE FROM pending_orders WHERE order_id=$1", order_id)
             await callback.answer("❌ Buyurtma rad etildi", show_alert=True)
 
     async def on_admin_feedback_text(message: Message, state: FSMContext):
@@ -476,9 +485,13 @@ def register_user_handlers(
             f"❌ Sizning buyurtmangiz admin tomonidan rad etildi.\n\n📝 Admin izohi:\n{message.text}"
         )
 
+        user_id = order["user_id"]
         orders.pop(order_id, None)
         async with pool.acquire() as conn:
-            await conn.execute("DELETE FROM orders WHERE order_id=$1", order_id)
+            if user_id in users_db:
+                await conn.execute("DELETE FROM orders WHERE order_id=$1", order_id)
+            else:
+                await conn.execute("DELETE FROM pending_orders WHERE order_id=$1", order_id)
 
         await message.answer("✅ Feedback yuborildi va buyurtma rad etildi")
         await state.clear()

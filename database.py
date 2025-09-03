@@ -1,8 +1,9 @@
+
 import asyncpg
 
 
 async def connect_db():
-    return await asyncpg.connect(dsn="postgresql://postgres:awaWDQxkqrajerZMnYVAOcxISucriSMJ@trolley.proxy.rlwy.net:18122/railway")
+    return await asyncpg.connect(dsn="postgresql://postgres:TsiFActfajGPJUQOKTHuyoWTOxGVxuEF@hopper.proxy.rlwy.net:19407/railway")
 
 
 async def create_tables(conn):
@@ -67,6 +68,25 @@ async def create_tables(conn):
         );
     ''')
     await conn.execute('''
+        CREATE TABLE IF NOT EXISTS pending_orders (
+            order_id BIGINT PRIMARY KEY,
+            user_id BIGINT,
+            username TEXT,
+            name TEXT,
+            region TEXT,
+            city TEXT,
+            service TEXT,
+            description TEXT,
+            time TEXT,
+            budget BIGINT,
+            latitude DOUBLE PRECISION,
+            longitude DOUBLE PRECISION,
+            chosen_worker BIGINT,
+            media_type TEXT,
+            media_file_id TEXT
+        );
+    ''')
+    await conn.execute('''
         CREATE TABLE IF NOT EXISTS offers (
             order_id BIGINT REFERENCES orders(order_id) ON DELETE CASCADE,
             worker_id BIGINT REFERENCES workers(worker_id) ON DELETE CASCADE,
@@ -123,12 +143,29 @@ async def load_from_db(conn, users_db, pending_users, workers_db, pending_worker
 
     orders_query = await conn.fetch('SELECT * FROM orders')
     for row in orders_query:
+        media = []
+        if row['media_type'] and row['media_file_id']:
+            media = [{'type': row['media_type'], 'file_id': row['media_file_id']}]
         orders[row['order_id']] = {
             **dict(row),
-            'workers_accepted': set()
+            'location': (row['latitude'], row['longitude']),
+            'workers_accepted': set(),
+            'media': media
         }
         if row['chosen_worker']:
             chosen_orders.add(row['order_id'])
+
+    pending_orders_query = await conn.fetch('SELECT * FROM pending_orders')
+    for row in pending_orders_query:
+        media = []
+        if row['media_type'] and row['media_file_id']:
+            media = [{'type': row['media_type'], 'file_id': row['media_file_id']}]
+        orders[row['order_id']] = {
+            **dict(row),
+            'location': (row['latitude'], row['longitude']),
+            'workers_accepted': set(),
+            'media': media
+        }
 
     offers_query = await conn.fetch('SELECT * FROM offers')
     for row in offers_query:
@@ -198,12 +235,37 @@ async def save_order(conn, order_id, data):
     media_type = None
     media_file_id = None
     if data.get('media'):
-        first_media = data['media'][0]
-        media_type = first_media['type']
-        media_file_id = first_media['file_id']
+        if data['media']:
+            first_media = data['media'][0]
+            media_type = first_media['type']
+            media_file_id = first_media['file_id']
 
     await conn.execute('''
         INSERT INTO orders (order_id,user_id,username,name,region,city,
+                            service,description,time,budget,latitude,longitude,
+                            chosen_worker,media_type,media_file_id)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        ON CONFLICT (order_id) DO UPDATE SET
+            user_id=$2, username=$3, name=$4, region=$5, city=$6,
+            service=$7, description=$8, time=$9, budget=$10,
+            latitude=$11, longitude=$12, chosen_worker=$13,
+            media_type=$14, media_file_id=$15
+    ''', order_id, data['user_id'], data.get('username'), data['name'],
+         data['region'], data['city'], data['service'], data['description'],
+         data.get('time'), data['budget'], data['location'][0], data['location'][1],
+         data.get('chosen_worker'), media_type, media_file_id)
+
+async def save_pending_order(conn, order_id, data):
+    media_type = None
+    media_file_id = None
+    if data.get('media'):
+        if data['media']:
+            first_media = data['media'][0]
+            media_type = first_media['type']
+            media_file_id = first_media['file_id']
+
+    await conn.execute('''
+        INSERT INTO pending_orders (order_id,user_id,username,name,region,city,
                             service,description,time,budget,latitude,longitude,
                             chosen_worker,media_type,media_file_id)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)

@@ -1,10 +1,12 @@
+
+from aiogram.types import Message
 from aiogram import Dispatcher, types, F, Bot
 from keyboards import admin_worker_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
     REGIONS, admin_keyboard, target_keyboard, filter_type_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from database import save_worker, delete_worker, delete_user, add_blocked, delete_blocked, add_admin, remove_admin, \
-    get_user, get_worker, delete_pending_worker, delete_pending_user
+from database import save_worker, delete_worker, add_blocked, delete_blocked, add_admin, remove_admin, delete_pending_worker
+
 
 class FeedbackStates(StatesGroup):
     waiting_feedback = State()
@@ -119,7 +121,7 @@ def register_admin_handlers(
                 reply_markup=admin_worker_keyboard(worker_id, bool(data.get("approved")))
             )
 
-    async def show_users(message: types.Message):
+    async def show_users(message: Message):
         if not is_admin(message):
             return
 
@@ -171,7 +173,17 @@ def register_admin_handlers(
                     user_id = uid
                     break
             if not user_id:
+                for uid, data in pending_users.items():
+                    if data.get("username", "").lower() == username:
+                        user_id = uid
+                        break
+            if not user_id:
                 for wid, data in workers_db.items():
+                    if data.get("username", "").lower() == username:
+                        user_id = wid
+                        break
+            if not user_id:
+                for wid, data in pending_workers.items():
                     if data.get("username", "").lower() == username:
                         user_id = wid
                         break
@@ -225,60 +237,34 @@ def register_admin_handlers(
 
                 if user_id and user_id in users_db:
                     user_data = users_db[user_id]
+                elif user_id and user_id in pending_users:
+                    user_data = pending_users[user_id]
+                elif user_id and user_id in workers_db:
+                    user_data = workers_db[user_id]
+                elif user_id and user_id in pending_workers:
+                    user_data = pending_workers[user_id]
                 elif username:
-                    for uid, data in users_db.items():
-                        if data.get("username", "").lower() == username:
-                            user_id = uid
-                            user_data = data
+                    for db in [users_db, pending_users, workers_db, pending_workers]:
+                        for uid, data in db.items():
+                            if data.get("username", "").lower() == username:
+                                user_id = uid
+                                user_data = data
+                                break
+                        if user_data:
                             break
 
                 if not user_data:
-                    if user_id and user_id in workers_db:
-                        user_data = workers_db[user_id]
-                    elif username:
-                        for wid, data in workers_db.items():
-                            if data.get("username", "").lower() == username:
-                                user_id = wid
-                                user_data = data
-                                break
-
-                if not user_data:
-                    if user_id:
-                        row = await conn.fetchrow("SELECT * FROM users WHERE user_id=$1", user_id)
+                    for table in ['users', 'pending_users', 'workers', 'pending_workers']:
+                        id_field = 'user_id' if 'user' in table else 'worker_id'
+                        row = await conn.fetchrow(f"SELECT * FROM {table} WHERE lower(username)=$1", username)
+                        if row:
+                            user_id = row[id_field]
+                            user_data = dict(row)
+                            break
+                        row = await conn.fetchrow(f"SELECT * FROM {table} WHERE {id_field}=$1", user_id)
                         if row:
                             user_data = dict(row)
-                        else:
-                            row = await conn.fetchrow("SELECT * FROM pending_users WHERE user_id=$1", user_id)
-                            if row:
-                                user_data = dict(row)
-                        if not row:
-                            row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
-                            if row:
-                                user_data = dict(row)
-                        if not row:
-                            row = await conn.fetchrow("SELECT * FROM pending_workers WHERE worker_id=$1", user_id)
-                            if row:
-                                user_data = dict(row)
-                    elif username:
-                        row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
-                        if row:
-                            user_id = row['user_id']
-                            user_data = dict(row)
-                        else:
-                            row = await conn.fetchrow("SELECT * FROM pending_users WHERE lower(username)=$1", username)
-                            if row:
-                                user_id = row['user_id']
-                                user_data = dict(row)
-                        if not row:
-                            row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
-                            if row:
-                                user_id = row['worker_id']
-                                user_data = dict(row)
-                        if not row:
-                            row = await conn.fetchrow("SELECT * FROM pending_workers WHERE lower(username)=$1", username)
-                            if row:
-                                user_id = row['worker_id']
-                                user_data = dict(row)
+                            break
 
                 if not user_data:
                     try:
@@ -334,13 +320,12 @@ def register_admin_handlers(
                 if username in blocked_users:
                     target = username
                 else:
-                    user_row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
-                    if user_row:
-                        user_id = user_row['user_id']
-                    else:
-                        worker_row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
-                        if worker_row:
-                            user_id = worker_row['worker_id']
+                    for table in ['users', 'pending_users', 'workers', 'pending_workers']:
+                        id_field = 'user_id' if 'user' in table else 'worker_id'
+                        row = await conn.fetchrow(f"SELECT {id_field} FROM {table} WHERE lower(username)=$1", username)
+                        if row:
+                            user_id = row[id_field]
+                            break
                     if user_id and user_id in blocked_users:
                         target = user_id
 
@@ -352,37 +337,38 @@ def register_admin_handlers(
             await delete_blocked(conn, target)
 
             if user_id is None and username:
-                user_row = await conn.fetchrow("SELECT * FROM users WHERE lower(username)=$1", username)
-                if user_row:
-                    user_id = user_row['user_id']
-                    users_db[user_id] = dict(user_row)
-                else:
-                    pending_user_row = await conn.fetchrow("SELECT * FROM pending_users WHERE lower(username)=$1", username)
-                    if pending_user_row:
-                        user_id = pending_user_row['user_id']
-                        pending_users[user_id] = dict(pending_user_row)
-                worker_row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
-                if worker_row:
-                    user_id = worker_row['worker_id']
-                    workers_db[user_id] = dict(worker_row)
-                else:
-                    pending_worker_row = await conn.fetchrow("SELECT * FROM pending_workers WHERE lower(username)=$1", username)
-                    if pending_worker_row:
-                        user_id = pending_worker_row['worker_id']
-                        pending_workers[user_id] = dict(pending_worker_row)
+                for table in ['users', 'pending_users', 'workers', 'pending_workers']:
+                    id_field = 'user_id' if 'user' in table else 'worker_id'
+                    row = await conn.fetchrow(f"SELECT * FROM {table} WHERE lower(username)=$1", username)
+                    if row:
+                        user_id = row[id_field]
+                        if 'user' in table:
+                            if table == 'users':
+                                users_db[user_id] = dict(row)
+                            else:
+                                pending_users[user_id] = dict(row)
+                        else:
+                            if table == 'workers':
+                                workers_db[user_id] = dict(row)
+                            else:
+                                pending_workers[user_id] = dict(row)
+                        break
             elif user_id:
-                user_row = await conn.fetchrow("SELECT * FROM users WHERE user_id=$1", user_id)
-                if user_row:
-                    users_db[user_id] = dict(user_row)
-                pending_user_row = await conn.fetchrow("SELECT * FROM pending_users WHERE user_id=$1", user_id)
-                if pending_user_row:
-                    pending_users[user_id] = dict(pending_user_row)
-                worker_row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
-                if worker_row:
-                    workers_db[user_id] = dict(worker_row)
-                pending_worker_row = await conn.fetchrow("SELECT * FROM pending_workers WHERE worker_id=$1", user_id)
-                if pending_worker_row:
-                    pending_workers[user_id] = dict(pending_worker_row)
+                for table in ['users', 'pending_users', 'workers', 'pending_workers']:
+                    id_field = 'user_id' if 'user' in table else 'worker_id'
+                    row = await conn.fetchrow(f"SELECT * FROM {table} WHERE {id_field}=$1", user_id)
+                    if row:
+                        if 'user' in table:
+                            if table == 'users':
+                                users_db[user_id] = dict(row)
+                            else:
+                                pending_users[user_id] = dict(row)
+                        else:
+                            if table == 'workers':
+                                workers_db[user_id] = dict(row)
+                            else:
+                                pending_workers[user_id] = dict(row)
+                        break
 
         await message.answer(f"✅ Foydalanuvchi {'@' + username if username else user_id} blokdan chiqarildi")
 
