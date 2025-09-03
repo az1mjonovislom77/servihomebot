@@ -119,7 +119,8 @@ def worker_actions_keyboard(order_id: int):
         inline_keyboard=[
             [
                 InlineKeyboardButton(text="✅ Qabul qilish", callback_data=f"w:accept:{order_id}"),
-                InlineKeyboardButton(text="💰 Boshqa narx taklif qilish", callback_data=f"set_price:{order_id}")
+                InlineKeyboardButton(text="💰 Boshqa narx taklif qilish", callback_data=f"set_price:{order_id}"),
+                InlineKeyboardButton(text="🕒 Boshqa vaqt taklif qilish", callback_data=f"set_time:{order_id}"),
             ]
         ]
     )
@@ -140,7 +141,7 @@ def choose_time_keyboard():
     )
 
 def choose_worker_keyboard(worker_id: int, order_id: int, price: str | None = None):
-    label = "✅ Tanlash" if not price else f"✅ Tanlash ({price} som)"
+    label = "✅ Tanlash" + (f" ({price} som)" if price else "")
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[

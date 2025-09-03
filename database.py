@@ -90,7 +90,8 @@ async def create_tables(conn):
         CREATE TABLE IF NOT EXISTS offers (
             order_id BIGINT REFERENCES orders(order_id) ON DELETE CASCADE,
             worker_id BIGINT REFERENCES workers(worker_id) ON DELETE CASCADE,
-            price BIGINT NOT NULL,
+            price BIGINT,
+            proposed_time TEXT,
             PRIMARY KEY (order_id, worker_id)
         );
     ''')
@@ -171,7 +172,7 @@ async def load_from_db(conn, users_db, pending_users, workers_db, pending_worker
     for row in offers_query:
         if row['order_id'] not in offers:
             offers[row['order_id']] = {}
-        offers[row['order_id']][row['worker_id']] = row['price']
+        offers[row['order_id']][row['worker_id']] = {'price': row['price'], 'proposed_time': row['proposed_time']}
         if row['order_id'] in orders:
             orders[row['order_id']]['workers_accepted'].add(row['worker_id'])
 
@@ -290,18 +291,14 @@ async def delete_order(conn, order_id):
     await conn.execute('DELETE FROM orders WHERE order_id=$1', order_id)
 
 
-async def save_offer(conn, order_id, worker_id, price=None):
-    if price is None:
-        row = await conn.fetchrow("SELECT budget FROM orders WHERE order_id=$1", order_id)
-        if row:
-            price = row["budget"]
-        else:
-            raise ValueError("Order not found")
+async def save_offer(conn, order_id, worker_id, price=None, proposed_time=None):
     await conn.execute('''
-        INSERT INTO offers (order_id, worker_id, price)
-        VALUES ($1,$2,$3)
-        ON CONFLICT (order_id, worker_id) DO UPDATE SET price=$3
-    ''', order_id, worker_id, price)
+        INSERT INTO offers (order_id, worker_id, price, proposed_time)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (order_id, worker_id) DO UPDATE SET
+            price = COALESCE(EXCLUDED.price, offers.price),
+            proposed_time = COALESCE(EXCLUDED.proposed_time, offers.proposed_time)
+    ''', order_id, worker_id, price, proposed_time)
 
 
 async def add_blocked(conn, identifier):

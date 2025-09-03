@@ -1,3 +1,4 @@
+# user_panel.py
 
 from aiogram import Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ContentType, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, \
@@ -515,7 +516,9 @@ def register_user_handlers(
             await callback.answer("❌ Siz royxatdan otmagansiz", show_alert=True)
             return
 
-        price = offers.get(order_id, {}).get(worker_id) or order["budget"]
+        offer = offers.get(order_id, {}).get(worker_id, {})
+        price = offer.get('price') or order["budget"]
+        proposed_time = offer.get('proposed_time')
 
         order["workers_accepted"].add(worker_id)
 
@@ -524,12 +527,15 @@ def register_user_handlers(
             f"👤 Ism: {worker['name']}\n"
             f"📍 Hudud: {worker['region']}, {worker['city']}\n"
             f"🔧 Kasb: {worker['profession']}\n"
-            f"💰 Taklif narxi: {price} som\n"
         )
+        if offer.get('price') is not None:
+            text += f"💰 Taklif qilgan narx: {offer['price']} som\n"
+        if proposed_time:
+            text += f"🕒 Taklif qilgan vaqt: {proposed_time}\n"
         await bot.send_message(
             order["user_id"],
             text,
-            reply_markup=choose_worker_keyboard(worker_id, order_id, str(price))
+            reply_markup=choose_worker_keyboard(worker_id, order_id, str(offer.get('price')) if offer.get('price') is not None else None)
         )
 
         for admin_id in admins:

@@ -1,3 +1,4 @@
+# workers_panel.py
 
 from aiogram import Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ContentType, ReplyKeyboardMarkup, KeyboardButton
@@ -7,7 +8,7 @@ from aiogram.fsm.state import StatesGroup, State
 from keyboards import (
     phone_request_keyboard, regions_keyboard, cities_keyboard,
     services_keyboard, remove_keyboard, REGIONS, SERVICES,
-    admin_worker_keyboard, edit_profile_keyboard, worker_panel_keyboard
+    admin_worker_keyboard, edit_profile_keyboard, worker_panel_keyboard, choose_time_keyboard
 )
 from database import save_worker, delete_worker, save_offer, save_pending_worker
 
@@ -26,6 +27,7 @@ class WorkerEditProfile(StatesGroup):
 
 class OfferStates(StatesGroup):
     waiting_price = State()
+    waiting_time = State()
 
 def register_worker_handlers(
     dp: Dispatcher,
@@ -200,7 +202,6 @@ def register_worker_handlers(
         await state.update_data(order_id=order_id)
         await callback.message.answer('💰 Taklif qiladigan narxni yozing (somda):')
         await callback.answer()
-    dp.callback_query.register(ask_price, F.data.startswith("set_price:"))
 
     async def save_price(message: Message, state: FSMContext):
         data = await state.get_data()
@@ -213,11 +214,46 @@ def register_worker_handlers(
         except ValueError:
             await message.answer('❌ Faqat raqam kiriting! Masalan(150 000)')
             return
+        worker_id = message.from_user.id
         if order_id not in offers:
             offers[order_id] = {}
-        offers[order_id][message.from_user.id] = price
+        if worker_id not in offers[order_id]:
+            offers[order_id][worker_id] = {'price': None, 'proposed_time': None}
+        offers[order_id][worker_id]['price'] = price
         async with pool.acquire() as conn:
-            await save_offer(conn, order_id, message.from_user.id, price)
+            await save_offer(conn, order_id, worker_id, price=price)
         await message.answer(f'✅ Sizning {price} somlik taklifingiz saqlandi. Endi qabul qilish tugmasini bosing.')
         await state.clear()
+
+    async def ask_time(callback: CallbackQuery, state: FSMContext):
+        order_id = int(callback.data.split(":")[1])
+        await callback.message.answer("🕒 Taklif qiladigan vaqtni tanlang:", reply_markup=choose_time_keyboard())
+        await state.set_state(OfferStates.waiting_time)
+        await state.update_data(order_id=order_id)
+        await callback.answer()
+
+    async def save_time(callback: CallbackQuery, state: FSMContext):
+        if not callback.data.startswith("time:"):
+            return
+        time_choice = callback.data.split(":")[1]
+        data = await state.get_data()
+        order_id = data.get('order_id')
+        if not order_id:
+            await callback.answer('⚠️ Buyurtma topilmadi')
+            return
+        worker_id = callback.from_user.id
+        if order_id not in offers:
+            offers[order_id] = {}
+        if worker_id not in offers[order_id]:
+            offers[order_id][worker_id] = {'price': None, 'proposed_time': None}
+        offers[order_id][worker_id]['proposed_time'] = time_choice
+        async with pool.acquire() as conn:
+            await save_offer(conn, order_id, worker_id, proposed_time=time_choice)
+        await callback.message.answer(f'✅ Sizning {time_choice} vaqt taklifingiz saqlandi. Endi qabul qilish tugmasini bosing.')
+        await state.clear()
+        await callback.answer()
+
+    dp.callback_query.register(ask_price, F.data.startswith("set_price:"))
+    dp.callback_query.register(ask_time, F.data.startswith("set_time:"))
     dp.message.register(save_price, OfferStates.waiting_price)
+    dp.callback_query.register(save_time, OfferStates.waiting_time, F.data.startswith("time:"))
