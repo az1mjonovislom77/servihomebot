@@ -1,4 +1,4 @@
-# user_panel.py
+
 from aiogram import Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ContentType, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, \
     InputMediaDocument
@@ -11,7 +11,7 @@ from keyboards import (
     REGIONS, SERVICES, worker_actions_keyboard, admin_user_keyboard, choose_worker_keyboard,
     location_button, choose_time_keyboard
 )
-from database import save_user, save_order, update_order
+from database import save_user, save_order, update_order, save_pending_user, delete_pending_user
 
 
 class UserOrder(StatesGroup):
@@ -40,6 +40,7 @@ def register_user_handlers(
         bot,
         admins: set[int],
         users_db: dict,
+        pending_users: dict,
         workers_db: dict,
         orders: dict,
         offers: dict,
@@ -56,12 +57,12 @@ def register_user_handlers(
         if not message.contact:
             await message.answer("⚠️ Tugma orqali telefon raqam yuboring", reply_markup=phone_request_keyboard())
             return
-        users_db[message.from_user.id] = {
+        pending_users[message.from_user.id] = {
             "phone": message.contact.phone_number,
             "username": message.from_user.username
         }
         async with pool.acquire() as conn:
-            await save_user(conn, message.from_user.id, users_db[message.from_user.id])
+            await save_pending_user(conn, message.from_user.id, pending_users[message.from_user.id])
         await message.answer("✍️ Ism-familiyangizni yozing:", reply_markup=remove_keyboard())
         await state.set_state(UserOrder.name)
     dp.message.register(on_user_contact, F.content_type == ContentType.CONTACT, StateFilter(UserOrder.contact))
@@ -85,9 +86,9 @@ def register_user_handlers(
             await message.answer("⚠️ Royxatdan viloyat tanlang", reply_markup=regions_keyboard())
             return
         await state.update_data(region=message.text)
-        users_db[message.from_user.id]['region'] = message.text
+        pending_users[message.from_user.id]['region'] = message.text
         async with pool.acquire() as conn:
-            await save_user(conn, message.from_user.id, users_db[message.from_user.id])
+            await save_pending_user(conn, message.from_user.id, pending_users[message.from_user.id])
         await message.answer("🏙 Shaharni tanlang:", reply_markup=cities_keyboard(message.text))
         await state.set_state(UserOrder.city)
     dp.message.register(on_user_region, StateFilter(UserOrder.region))
@@ -107,9 +108,9 @@ def register_user_handlers(
             await message.answer("⚠️ Royxatdan shahar tanlang", reply_markup=cities_keyboard(region))
             return
         await state.update_data(city=message.text)
-        users_db[message.from_user.id]['city'] = message.text
+        pending_users[message.from_user.id]['city'] = message.text
         async with pool.acquire() as conn:
-            await save_user(conn, message.from_user.id, users_db[message.from_user.id])
+            await save_pending_user(conn, message.from_user.id, pending_users[message.from_user.id])
         await message.answer("🛠 Xizmat turini tanlang:", reply_markup=services_keyboard())
         await state.set_state(UserOrder.service)
     dp.message.register(on_user_city, StateFilter(UserOrder.city))
@@ -306,7 +307,8 @@ def register_user_handlers(
 
 
         for admin_id in admins:
-            user_phone = users_db.get(message.from_user.id, {}).get("phone", "N/A")
+            user_data = pending_users.get(message.from_user.id) or users_db.get(message.from_user.id) or {}
+            user_phone = user_data.get("phone", "N/A")
             text = (
                 "📢 Yangi buyurtma (kuzatuv):\n"
                 f"👤User: @{_safe_username(message)}\n"
@@ -384,6 +386,14 @@ def register_user_handlers(
             return
 
         elif data.startswith("admin_approve"):
+            user_id = order["user_id"]
+            if user_id in pending_users:
+                user_data = pending_users.pop(user_id)
+                users_db[user_id] = user_data
+                async with pool.acquire() as conn:
+                    await save_user(conn, user_id, user_data)
+                    await delete_pending_user(conn, user_id)
+
             matched_workers = [
                 (worker_id, worker) for worker_id, worker in workers_db.items()
                 if worker.get("approved") and

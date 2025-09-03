@@ -8,7 +8,7 @@ from keyboards import (
     services_keyboard, remove_keyboard, REGIONS, SERVICES,
     admin_worker_keyboard, edit_profile_keyboard, worker_panel_keyboard,
 )
-from database import save_worker, delete_worker, save_offer
+from database import save_worker, delete_worker, save_offer, save_pending_worker, delete_pending_worker
 
 class WorkerRegistration(StatesGroup):
     contact = State()
@@ -31,6 +31,7 @@ def register_worker_handlers(
     bot,
     admins: set[int],
     workers_db: dict,
+    pending_workers: dict,
     offers: dict,
     pool
 ):
@@ -43,19 +44,19 @@ def register_worker_handlers(
         if not message.contact:
             await message.answer('⚠️ Tugma orqali telefon raqam yuboring', reply_markup=phone_request_keyboard())
             return
-        workers_db.setdefault(message.from_user.id, {})
-        workers_db[message.from_user.id]['phone'] = message.contact.phone_number
-        workers_db[message.from_user.id]['username'] = message.from_user.username
+        pending_workers.setdefault(message.from_user.id, {})
+        pending_workers[message.from_user.id]['phone'] = message.contact.phone_number
+        pending_workers[message.from_user.id]['username'] = message.from_user.username
         async with pool.acquire() as conn:
-            await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
+            await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('✍️ Ism va Familiyangizni yozing:', reply_markup=remove_keyboard())
         await state.set_state(WorkerRegistration.name)
     dp.message.register(on_worker_contact, F.content_type == ContentType.CONTACT, WorkerRegistration.contact)
 
     async def on_worker_name(message: Message, state: FSMContext):
-        workers_db[message.from_user.id]["name"] = message.text.strip()
+        pending_workers[message.from_user.id]["name"] = message.text.strip()
         async with pool.acquire() as conn:
-            await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
+            await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('🌆 Viloyatni tanlang:', reply_markup=regions_keyboard())
         await state.set_state(WorkerRegistration.region)
     dp.message.register(on_worker_name, WorkerRegistration.name)
@@ -64,21 +65,21 @@ def register_worker_handlers(
         if message.text not in REGIONS:
             await message.answer('⚠️ Royxatdan viloyat tanlang', reply_markup=regions_keyboard())
             return
-        workers_db[message.from_user.id]["region"] = message.text
+        pending_workers[message.from_user.id]["region"] = message.text
         async with pool.acquire() as conn:
-            await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
+            await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('🏙 Shaharni tanlang:', reply_markup=cities_keyboard(message.text))
         await state.set_state(WorkerRegistration.city)
     dp.message.register(on_worker_region, WorkerRegistration.region)
 
     async def on_worker_city(message: Message, state: FSMContext):
-        region = workers_db.get(message.from_user.id, {}).get('region')
+        region = pending_workers.get(message.from_user.id, {}).get('region')
         if message.text not in (REGIONS.get(region) or []):
             await message.answer('⚠️ Royxatdan shahar tanlang', reply_markup=cities_keyboard(region))
             return
-        workers_db[message.from_user.id]['city'] = message.text
+        pending_workers[message.from_user.id]['city'] = message.text
         async with pool.acquire() as conn:
-            await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
+            await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('🛠 Kasbingizni tanlang:', reply_markup=services_keyboard())
         await state.set_state(WorkerRegistration.profession)
     dp.message.register(on_worker_city, WorkerRegistration.city)
@@ -87,14 +88,13 @@ def register_worker_handlers(
         if message.text not in SERVICES:
             await message.answer('⚠️ Royxatdan kasbni tanlang', reply_markup=services_keyboard())
             return
-        workers_db[message.from_user.id]['profession'] = message.text
-        workers_db[message.from_user.id]['approved'] = False
+        pending_workers[message.from_user.id]['profession'] = message.text
         async with pool.acquire() as conn:
-            await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
+            await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await state.clear()
         await message.answer('⏳ Arizangiz adminga yuborildi. Tasdiqlangach buyurtmalar keladi')
 
-        data = workers_db[message.from_user.id]
+        data = pending_workers[message.from_user.id]
         for admin_id in admins:
             await bot.send_message(
                 admin_id,

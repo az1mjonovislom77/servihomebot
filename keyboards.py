@@ -5,17 +5,17 @@ from aiogram.types import (
 
 
 REGIONS = {
-    "Toshkent viloyati": ["Toshkent sh.", "Chirchiq", "Angren", "Olmaliq"],
-    "Samarqand viloyati": ["Samarqand sh", "Kattaqorgon"],
-    "Fargona viloyati": ["Fargona sh.", "Qoqon", "Margilon"],
-    "Andijon viloyati": ["Andijon sh.", "Asaka", "Shahrikhon"],
-    "Namangan viloyati": ["Namangan sh.", "Chortoq", "Chust"],
-    "Buxoro viloyati": ["Buxoro sh.", "Kogon"],
-    "Navoiy viloyati": ["Navoiy sh.", "Zarafshon"],
+    # "Toshkent viloyati": ["Toshkent sh.", "Chirchiq", "Angren", "Olmaliq"],
+    # "Samarqand viloyati": ["Samarqand sh", "Kattaqorgon"],
+    # "Fargona viloyati": ["Fargona sh.", "Qoqon", "Margilon"],
+    # "Andijon viloyati": ["Andijon sh.", "Asaka", "Shahrikhon"],
+    # "Namangan viloyati": ["Namangan sh.", "Chortoq", "Chust"],
+    # "Buxoro viloyati": ["Buxoro sh.", "Kogon"],
+    # "Navoiy viloyati": ["Navoiy sh.", "Zarafshon"],
     "Qashqadaryo viloyati": ["Qarshi", "Shahrisabz"],
-    "Surxondaryo viloyati": ["Termiz", "Denov"],
-    "Xorazm viloyati": ["Urganch", "Xiva"],
-    "Qoraqalpogiston": ["Nukus", "Taxiatosh"]
+    # "Surxondaryo viloyati": ["Termiz", "Denov"],
+    # "Xorazm viloyati": ["Urganch", "Xiva"],
+    # "Qoraqalpogiston": ["Nukus", "Taxiatosh"]
 }
 
 SERVICES = [

@@ -4,8 +4,7 @@ from keyboards import admin_worker_keyboard, remove_keyboard, cities_keyboard, r
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from database import save_worker, delete_worker, delete_user, add_blocked, delete_blocked, add_admin, remove_admin, \
-    get_user, get_worker
-
+    get_user, get_worker, delete_pending_worker, delete_pending_user
 
 class FeedbackStates(StatesGroup):
     waiting_feedback = State()
@@ -34,6 +33,7 @@ async def feedback_text(
     message: types.Message,
     state: FSMContext,
     workers_db: dict,
+    pending_workers: dict,
     bot: Bot,
     pool
 ):
@@ -45,17 +45,24 @@ async def feedback_text(
         workers_db.pop(worker_id)
         async with pool.acquire() as conn:
             await delete_worker(conn, worker_id)
-        try:
-            await bot.send_message(
-                worker_id,
-                f"❌ Sizning arizangiz rad etildi.\n\n📝 Feedback: {feedback_message}"
-            )
-        except:
-            await message.answer(
-                "⚠️ Ishchiga feedback yuborib bolmadi (u botni bloklagan bolishi mumkin)"
-            )
+    elif worker_id in pending_workers:
+        pending_workers.pop(worker_id)
+        async with pool.acquire() as conn:
+            await delete_pending_worker(conn, worker_id)
     else:
         await message.answer("⚠️ Bu ishchi topilmadi")
+        await state.clear()
+        return
+
+    try:
+        await bot.send_message(
+            worker_id,
+            f"❌ Sizning arizangiz rad etildi.\n\n📝 Feedback: {feedback_message}"
+        )
+    except:
+        await message.answer(
+            "⚠️ Ishchiga feedback yuborib bolmadi (u botni bloklagan bolishi mumkin)"
+        )
 
     await message.answer("✅ Feedback yuborildi va ariza rad etildi")
     await state.clear()
@@ -66,7 +73,9 @@ def register_admin_handlers(
     bot: Bot,
     admins: set[int],
     users_db: dict,
+    pending_users: dict,
     workers_db: dict,
+    pending_workers: dict,
     blocked_users: set,
     pool
 ):
@@ -77,7 +86,7 @@ def register_admin_handlers(
     )
 
     async def feedback_handler(message: types.Message, state: FSMContext):
-        await feedback_text(message, state, workers_db, bot, pool)
+        await feedback_text(message, state, workers_db, pending_workers, bot, pool)
 
     dp.message.register(feedback_handler, FeedbackStates.waiting_feedback)
 
@@ -156,26 +165,23 @@ def register_admin_handlers(
         else:
             username = identifier.lstrip("@").lower()
 
-        # If username, try to find user_id
         if username:
-            # Search in users_db
             for uid, data in users_db.items():
                 if data.get("username", "").lower() == username:
                     user_id = uid
                     break
-            # If not found, search in workers_db
             if not user_id:
                 for wid, data in workers_db.items():
                     if data.get("username", "").lower() == username:
                         user_id = wid
                         break
 
-        # Pop from dicts if user_id found
         if user_id:
             users_db.pop(user_id, None)
+            pending_users.pop(user_id, None)
             workers_db.pop(user_id, None)
+            pending_workers.pop(user_id, None)
 
-        # Add to blocked, prefer user_id if found
         async with pool.acquire() as conn:
             await add_blocked(conn, user_id or username)
 
@@ -242,7 +248,15 @@ def register_admin_handlers(
                         if row:
                             user_data = dict(row)
                         else:
+                            row = await conn.fetchrow("SELECT * FROM pending_users WHERE user_id=$1", user_id)
+                            if row:
+                                user_data = dict(row)
+                        if not row:
                             row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
+                            if row:
+                                user_data = dict(row)
+                        if not row:
+                            row = await conn.fetchrow("SELECT * FROM pending_workers WHERE worker_id=$1", user_id)
                             if row:
                                 user_data = dict(row)
                     elif username:
@@ -251,7 +265,17 @@ def register_admin_handlers(
                             user_id = row['user_id']
                             user_data = dict(row)
                         else:
+                            row = await conn.fetchrow("SELECT * FROM pending_users WHERE lower(username)=$1", username)
+                            if row:
+                                user_id = row['user_id']
+                                user_data = dict(row)
+                        if not row:
                             row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
+                            if row:
+                                user_id = row['worker_id']
+                                user_data = dict(row)
+                        if not row:
+                            row = await conn.fetchrow("SELECT * FROM pending_workers WHERE lower(username)=$1", username)
                             if row:
                                 user_id = row['worker_id']
                                 user_data = dict(row)
@@ -332,17 +356,33 @@ def register_admin_handlers(
                 if user_row:
                     user_id = user_row['user_id']
                     users_db[user_id] = dict(user_row)
+                else:
+                    pending_user_row = await conn.fetchrow("SELECT * FROM pending_users WHERE lower(username)=$1", username)
+                    if pending_user_row:
+                        user_id = pending_user_row['user_id']
+                        pending_users[user_id] = dict(pending_user_row)
                 worker_row = await conn.fetchrow("SELECT * FROM workers WHERE lower(username)=$1", username)
                 if worker_row:
                     user_id = worker_row['worker_id']
                     workers_db[user_id] = dict(worker_row)
+                else:
+                    pending_worker_row = await conn.fetchrow("SELECT * FROM pending_workers WHERE lower(username)=$1", username)
+                    if pending_worker_row:
+                        user_id = pending_worker_row['worker_id']
+                        pending_workers[user_id] = dict(pending_worker_row)
             elif user_id:
                 user_row = await conn.fetchrow("SELECT * FROM users WHERE user_id=$1", user_id)
                 if user_row:
                     users_db[user_id] = dict(user_row)
+                pending_user_row = await conn.fetchrow("SELECT * FROM pending_users WHERE user_id=$1", user_id)
+                if pending_user_row:
+                    pending_users[user_id] = dict(pending_user_row)
                 worker_row = await conn.fetchrow("SELECT * FROM workers WHERE worker_id=$1", user_id)
                 if worker_row:
                     workers_db[user_id] = dict(worker_row)
+                pending_worker_row = await conn.fetchrow("SELECT * FROM pending_workers WHERE worker_id=$1", user_id)
+                if pending_worker_row:
+                    pending_workers[user_id] = dict(pending_worker_row)
 
         await message.answer(f"✅ Foydalanuvchi {'@' + username if username else user_id} blokdan chiqarildi")
 
@@ -351,30 +391,44 @@ def register_admin_handlers(
             return
         action, wid_str = call.data.split(":")
         worker_id = int(wid_str)
-        data = workers_db.get(worker_id)
+        data = workers_db.get(worker_id) or pending_workers.get(worker_id)
 
         if not data:
             await call.answer("Ishchi topilmadi", show_alert=True)
             return
 
         if action == "approve_worker":
+            if worker_id not in pending_workers:
+                await call.answer("Allaqachon tasdiqlangan yoki topilmadi", show_alert=True)
+                return
+            data = pending_workers.pop(worker_id)
             data["approved"] = True
+            workers_db[worker_id] = data
             async with pool.acquire() as conn:
                 await save_worker(conn, worker_id, data)
+                await delete_pending_worker(conn, worker_id)
             await bot.send_message(worker_id, "✅ Admin tasdiqladi. Endi buyurtmalarni qabul qilishingiz mumkin")
             await call.message.edit_text("✅ Ishchi tasdiqlandi")
         elif action == "reject_worker":
-            workers_db.pop(worker_id, None)
-            async with pool.acquire() as conn:
-                await delete_worker(conn, worker_id)
-            await bot.send_message(worker_id, "❌ Admin arizangizni rad etdi")
-            await call.message.edit_text("❌ Ishchi rad etildi va ochirildi")
+            if worker_id in pending_workers:
+                pending_workers.pop(worker_id)
+                async with pool.acquire() as conn:
+                    await delete_pending_worker(conn, worker_id)
+                await bot.send_message(worker_id, "❌ Admin arizangizni rad etdi")
+                await call.message.edit_text("❌ Ishchi rad etildi va ochirildi")
+            else:
+                await call.answer("Arizachi topilmadi", show_alert=True)
+                return
         elif action == "fire_worker":
-            workers_db.pop(worker_id, None)
-            async with pool.acquire() as conn:
-                await delete_worker(conn, worker_id)
-            await bot.send_message(worker_id, "🗑 Siz ishdan boshatildingiz")
-            await call.message.edit_text("🗑 Ishchi ishdan boshatildi")
+            if worker_id in workers_db:
+                workers_db.pop(worker_id)
+                async with pool.acquire() as conn:
+                    await delete_worker(conn, worker_id)
+                await bot.send_message(worker_id, "🗑 Siz ishdan boshatildingiz")
+                await call.message.edit_text("🗑 Ishchi ishdan boshatildi")
+            else:
+                await call.answer("Ishchi topilmadi", show_alert=True)
+                return
 
         await call.answer()
 

@@ -2,12 +2,21 @@ import asyncpg
 
 
 async def connect_db():
-    return await asyncpg.connect(dsn="postgresql://postgres:TsiFActfajGPJUQOKTHuyoWTOxGVxuEF@hopper.proxy.rlwy.net:19407/railway")
+    return await asyncpg.connect(dsn="postgresql://postgres:awaWDQxkqrajerZMnYVAOcxISucriSMJ@trolley.proxy.rlwy.net:18122/railway")
 
 
 async def create_tables(conn):
     await conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
+            user_id BIGINT PRIMARY KEY,
+            phone TEXT NOT NULL,
+            username TEXT,
+            region TEXT,
+            city TEXT
+        );
+    ''')
+    await conn.execute('''
+        CREATE TABLE IF NOT EXISTS pending_users (
             user_id BIGINT PRIMARY KEY,
             phone TEXT NOT NULL,
             username TEXT,
@@ -25,6 +34,17 @@ async def create_tables(conn):
             city TEXT,
             profession TEXT,
             approved BOOLEAN DEFAULT FALSE
+        );
+    ''')
+    await conn.execute('''
+        CREATE TABLE IF NOT EXISTS pending_workers (
+            worker_id BIGINT PRIMARY KEY,
+            phone TEXT NOT NULL,
+            username TEXT,
+            name TEXT,
+            region TEXT,
+            city TEXT,
+            profession TEXT
         );
     ''')
     await conn.execute('''
@@ -68,7 +88,7 @@ async def create_tables(conn):
     ''')
 
 
-async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders, blocked_users, admins):
+async def load_from_db(conn, users_db, pending_users, workers_db, pending_workers, orders, offers, chosen_orders, blocked_users, admins):
     # Load blocked users first
     blocked_rows = await conn.fetch('SELECT * FROM blocked_users')
     for row in blocked_rows:
@@ -83,11 +103,23 @@ async def load_from_db(conn, users_db, workers_db, orders, offers, chosen_orders
         if row['user_id'] not in blocked_users and username_lower not in blocked_users:
             users_db[row['user_id']] = dict(row)
 
+    pending_users_rows = await conn.fetch('SELECT * FROM pending_users')
+    for row in pending_users_rows:
+        username_lower = (row['username'] or "").lower()
+        if row['user_id'] not in blocked_users and username_lower not in blocked_users:
+            pending_users[row['user_id']] = dict(row)
+
     workers = await conn.fetch('SELECT * FROM workers')
     for row in workers:
         username_lower = (row['username'] or "").lower()
         if row['worker_id'] not in blocked_users and username_lower not in blocked_users:
             workers_db[row['worker_id']] = dict(row)
+
+    pending_workers_rows = await conn.fetch('SELECT * FROM pending_workers')
+    for row in pending_workers_rows:
+        username_lower = (row['username'] or "").lower()
+        if row['worker_id'] not in blocked_users and username_lower not in blocked_users:
+            pending_workers[row['worker_id']] = dict(row)
 
     orders_query = await conn.fetch('SELECT * FROM orders')
     for row in orders_query:
@@ -118,6 +150,17 @@ async def save_user(conn, user_id, data):
         SET phone=$2, username=$3, region=$4, city=$5
     ''', user_id, data['phone'], data.get('username'), data.get('region'), data.get('city'))
 
+async def save_pending_user(conn, user_id, data):
+    await conn.execute('''
+        INSERT INTO pending_users (user_id, phone, username, region, city)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (user_id) DO UPDATE
+        SET phone=$2, username=$3, region=$4, city=$5
+    ''', user_id, data['phone'], data.get('username'), data.get('region'), data.get('city'))
+
+async def delete_pending_user(conn, user_id):
+    await conn.execute('DELETE FROM pending_users WHERE user_id=$1', user_id)
+
 async def delete_user(conn, user_id):
     await conn.execute('DELETE FROM users WHERE user_id=$1', user_id)
 
@@ -132,6 +175,20 @@ async def save_worker(conn, worker_id, data):
     ''', worker_id, data.get('phone'), data.get('username'),
          data.get('name'), data.get('region'), data.get('city'),
          data.get('profession'), data.get('approved', False))
+
+async def save_pending_worker(conn, worker_id, data):
+    await conn.execute('''
+        INSERT INTO pending_workers (worker_id, phone, username, name, region, city, profession)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        ON CONFLICT (worker_id) DO UPDATE SET
+            phone=$2, username=$3, name=$4,
+            region=$5, city=$6, profession=$7
+    ''', worker_id, data.get('phone'), data.get('username'),
+         data.get('name'), data.get('region'), data.get('city'),
+         data.get('profession'))
+
+async def delete_pending_worker(conn, worker_id):
+    await conn.execute('DELETE FROM pending_workers WHERE worker_id=$1', worker_id)
 
 async def delete_worker(conn, worker_id):
     await conn.execute('DELETE FROM workers WHERE worker_id=$1', worker_id)
