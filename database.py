@@ -3,7 +3,7 @@ import asyncpg
 
 
 async def connect_db():
-    return await asyncpg.connect(dsn="postgresql://postgres:TsiFActfajGPJUQOKTHuyoWTOxGVxuEF@hopper.proxy.rlwy.net:19407/railway")
+    return await asyncpg.connect(dsn="postgresql://postgres:uCyIibeRGpavLSeWKivrPXsYEWgUCaxv@metro.proxy.rlwy.net:54559/railway")
 
 
 async def create_tables(conn):
