@@ -252,11 +252,11 @@ def register_user_handlers(
                     await message.answer_video(media["file_id"], caption=summary, reply_markup=markup)
             else:
                 input_media = []
-                for m in media_list:
-                    if m["type"] == "photo":
-                        input_media.append(InputMediaPhoto(media=m["file_id"]))
+                for media in media_list:
+                    if media["type"] == "photo":
+                        input_media.append(InputMediaPhoto(media=media["file_id"]))
                     else:
-                        input_media.append(InputMediaVideo(media=m["file_id"]))
+                        input_media.append(InputMediaVideo(media=media["file_id"]))
                 input_media[0].caption = summary
                 await bot.send_media_group(chat_id=message.chat.id, media=input_media)
                 await message.answer("📍 Lokatsiya:", reply_markup=markup)
@@ -329,13 +329,13 @@ def register_user_handlers(
 
             if media_list and isinstance(media_list, list) and len(media_list) > 1:
                 album = []
-                for i, m in enumerate(media_list):
-                    if m["type"] == "photo":
-                        album.append(InputMediaPhoto(media=m["file_id"], caption=text if i == 0 else None))
-                    elif m["type"] == "video":
-                        album.append(InputMediaVideo(media=m["file_id"], caption=text if i == 0 else None))
-                    elif m["type"] == "document":
-                        album.append(InputMediaDocument(media=m["file_id"], caption=text if i == 0 else None))
+                for i, media in enumerate(media_list):
+                    if media["type"] == "photo":
+                        album.append(InputMediaPhoto(media=media["file_id"], caption=text if i == 0 else None))
+                    elif media["type"] == "video":
+                        album.append(InputMediaVideo(media=media["file_id"], caption=text if i == 0 else None))
+                    elif media["type"] == "document":
+                        album.append(InputMediaDocument(media=media["file_id"], caption=text if i == 0 else None))
 
                 if album:
                     await bot.send_media_group(admin_id, album)
@@ -345,13 +345,13 @@ def register_user_handlers(
 
 
             elif media_list and len(media_list) == 1:
-                m = media_list[0]
-                if m["type"] == "photo":
-                    await bot.send_photo(admin_id, m["file_id"], caption=text, reply_markup=markup)
-                elif m["type"] == "video":
-                    await bot.send_video(admin_id, m["file_id"], caption=text, reply_markup=markup)
-                elif m["type"] == "document":
-                    await bot.send_document(admin_id, m["file_id"], caption=text, reply_markup=markup)
+                media = media_list[0]
+                if media["type"] == "photo":
+                    await bot.send_photo(admin_id, media["file_id"], caption=text, reply_markup=markup)
+                elif media["type"] == "video":
+                    await bot.send_video(admin_id, media["file_id"], caption=text, reply_markup=markup)
+                elif media["type"] == "document":
+                    await bot.send_document(admin_id, media["file_id"], caption=text, reply_markup=markup)
                 else:
                     await bot.send_message(admin_id, text, reply_markup=markup)
 
@@ -429,29 +429,29 @@ def register_user_handlers(
 
                         if len(media_list) > 1:
                             album = []
-                            for i, m in enumerate(media_list):
+                            for i, media in enumerate(media_list):
                                 caption = notif_text if i == 0 else None
-                                if m["type"] == "photo":
-                                    album.append(InputMediaPhoto(media=m["file_id"], caption=caption))
-                                elif m["type"] == "video":
-                                    album.append(InputMediaVideo(media=m["file_id"], caption=caption))
-                                elif m["type"] == "document":
-                                    album.append(InputMediaDocument(media=m["file_id"], caption=caption))
+                                if media["type"] == "photo":
+                                    album.append(InputMediaPhoto(media=media["file_id"], caption=caption))
+                                elif media["type"] == "video":
+                                    album.append(InputMediaVideo(media=media["file_id"], caption=caption))
+                                elif media["type"] == "document":
+                                    album.append(InputMediaDocument(media=media["file_id"], caption=caption))
 
                             if album:
                                 await bot.send_media_group(worker_id, album)
                                 await bot.send_message(worker_id, "📍 Joylashuvi:", reply_markup=full_markup)
 
                         else:
-                            m = media_list[0]
-                            if m["type"] == "photo":
-                                await bot.send_photo(worker_id, m["file_id"], caption=notif_text,
+                            media = media_list[0]
+                            if media["type"] == "photo":
+                                await bot.send_photo(worker_id, media["file_id"], caption=notif_text,
                                                      reply_markup=full_markup)
-                            elif m["type"] == "video":
-                                await bot.send_video(worker_id, m["file_id"], caption=notif_text,
+                            elif media["type"] == "video":
+                                await bot.send_video(worker_id, media["file_id"], caption=notif_text,
                                                      reply_markup=full_markup)
-                            elif m["type"] == "document":
-                                await bot.send_document(worker_id, m["file_id"], caption=notif_text,
+                            elif media["type"] == "document":
+                                await bot.send_document(worker_id, media["file_id"], caption=notif_text,
                                                         reply_markup=full_markup)
                             else:
                                 await bot.send_message(worker_id, notif_text, reply_markup=full_markup)
