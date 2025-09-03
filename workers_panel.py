@@ -1,4 +1,3 @@
-# workers_panel.py
 
 from aiogram import Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ContentType, ReplyKeyboardMarkup, KeyboardButton

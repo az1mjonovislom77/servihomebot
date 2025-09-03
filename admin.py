@@ -178,14 +178,14 @@ def register_admin_handlers(
                         user_id = uid
                         break
             if not user_id:
-                for wid, data in workers_db.items():
+                for worker_id, data in workers_db.items():
                     if data.get("username", "").lower() == username:
-                        user_id = wid
+                        user_id = worker_id
                         break
             if not user_id:
-                for wid, data in pending_workers.items():
+                for worker_id, data in pending_workers.items():
                     if data.get("username", "").lower() == username:
-                        user_id = wid
+                        user_id = worker_id
                         break
 
         if user_id:
@@ -375,8 +375,8 @@ def register_admin_handlers(
     async def process_worker_actions(call: types.CallbackQuery):
         if not is_admin(call):
             return
-        action, wid_str = call.data.split(":")
-        worker_id = int(wid_str)
+        action, worker_id_str = call.data.split(":")
+        worker_id = int(worker_id_str)
         data = workers_db.get(worker_id) or pending_workers.get(worker_id)
 
         if not data:
