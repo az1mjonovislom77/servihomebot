@@ -298,7 +298,7 @@ async def delete_order(conn, order_id):
 async def save_offer(conn, order_id, worker_id, price=None, proposed_time=None):
     await conn.execute('''
         INSERT INTO offers (order_id, worker_id, price, proposed_time)
-        VALUES ($1, $2, $3, $4)
+        VALUES ($1, $2, COALESCE($3, 0), $4)
         ON CONFLICT (order_id, worker_id) DO UPDATE SET
             price = COALESCE(EXCLUDED.price, offers.price),
             proposed_time = COALESCE(EXCLUDED.proposed_time, offers.proposed_time)
