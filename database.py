@@ -172,7 +172,11 @@ async def load_from_db(conn, users_db, pending_users, workers_db, pending_worker
     for row in offers_query:
         if row['order_id'] not in offers:
             offers[row['order_id']] = {}
-        offers[row['order_id']][row['worker_id']] = {'price': row['price'], 'proposed_time': row['proposed_time']}
+
+        offers[row['order_id']][row['worker_id']] = {
+            'price': row['price'],
+            'proposed_time': row.get('proposed_time')
+        }
         if row['order_id'] in orders:
             orders[row['order_id']]['workers_accepted'].add(row['worker_id'])
 
