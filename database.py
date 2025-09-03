@@ -228,7 +228,14 @@ async def delete_pending_worker(conn, worker_id):
     await conn.execute('DELETE FROM pending_workers WHERE worker_id=$1', worker_id)
 
 async def delete_worker(conn, worker_id):
+    await conn.execute('''
+        UPDATE orders
+        SET chosen_worker = NULL
+        WHERE chosen_worker=$1
+    ''', worker_id)
+
     await conn.execute('DELETE FROM workers WHERE worker_id=$1', worker_id)
+
 
 
 async def save_order(conn, order_id, data):
