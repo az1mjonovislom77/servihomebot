@@ -383,7 +383,7 @@ def register_user_handlers(
 
         if data.startswith("admin_feedback"):
             await state.update_data(order_id=order_id)
-            await callback.message.answer("✍️ Iltimos, fikr-mulohazangizni yozing:")
+            await callback.message.answer("✍️ Fikr-mulohazangizni yozing:")
             await state.set_state(AdminFeedback.writing)
             await callback.answer()
             return

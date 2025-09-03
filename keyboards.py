@@ -119,7 +119,9 @@ def worker_actions_keyboard(order_id: int):
         inline_keyboard=[
             [
                 InlineKeyboardButton(text="✅ Qabul qilish", callback_data=f"w:accept:{order_id}"),
-                InlineKeyboardButton(text="💰 Narx belgilash", callback_data=f"set_price:{order_id}")]
+                InlineKeyboardButton(text="💰 Boshqa narx taklif qilish", callback_data=f"set_price:{order_id}")
+            ],
+                InlineKeyboardButton(text="🕒 Boshqa vaqtni taklif qilish", callback_data=f"set_time:{order_id}")
         ]
     )
 
