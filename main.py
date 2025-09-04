@@ -12,13 +12,13 @@ from user_panel import register_user_handlers
 from workers_panel import register_worker_handlers
 from database import create_tables, load_from_db
 
-
 API_TOKEN = '8372351670:AAH389RletRBd8eNL2v9a5-tfSF-i_4R33c'
 DSN = os.getenv("DATABASE_URL")
 
 logging.basicConfig(level=logging.INFO)
 
 pool = None
+
 
 async def main():
     global pool

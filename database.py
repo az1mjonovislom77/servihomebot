@@ -1,9 +1,9 @@
-
 import asyncpg
 
 
 async def connect_db():
-    return await asyncpg.connect(dsn="postgresql://postgres:uCyIibeRGpavLSeWKivrPXsYEWgUCaxv@metro.proxy.rlwy.net:54559/railway")
+    return await asyncpg.connect(
+        dsn="postgresql://postgres:uCyIibeRGpavLSeWKivrPXsYEWgUCaxv@metro.proxy.rlwy.net:54559/railway")
 
 
 async def create_tables(conn):
@@ -109,7 +109,8 @@ async def create_tables(conn):
     ''')
 
 
-async def load_from_db(conn, users_db, pending_users, workers_db, pending_workers, orders, offers, chosen_orders, blocked_users, admins):
+async def load_from_db(conn, users_db, pending_users, workers_db, pending_workers, orders, offers, chosen_orders,
+                       blocked_users, admins):
     # Load blocked users first
     blocked_rows = await conn.fetch('SELECT * FROM blocked_users')
     for row in blocked_rows:
@@ -192,6 +193,7 @@ async def save_user(conn, user_id, data):
         SET phone=$2, username=$3, region=$4, city=$5
     ''', user_id, data['phone'], data.get('username'), data.get('region'), data.get('city'))
 
+
 async def save_pending_user(conn, user_id, data):
     await conn.execute('''
         INSERT INTO pending_users (user_id, phone, username, region, city)
@@ -200,8 +202,10 @@ async def save_pending_user(conn, user_id, data):
         SET phone=$2, username=$3, region=$4, city=$5
     ''', user_id, data['phone'], data.get('username'), data.get('region'), data.get('city'))
 
+
 async def delete_pending_user(conn, user_id):
     await conn.execute('DELETE FROM pending_users WHERE user_id=$1', user_id)
+
 
 async def delete_user(conn, user_id):
     await conn.execute('DELETE FROM users WHERE user_id=$1', user_id)
@@ -215,8 +219,9 @@ async def save_worker(conn, worker_id, data):
             phone=$2, username=$3, name=$4,
             region=$5, city=$6, profession=$7, approved=$8
     ''', worker_id, data.get('phone'), data.get('username'),
-         data.get('name'), data.get('region'), data.get('city'),
-         data.get('profession'), data.get('approved', False))
+                       data.get('name'), data.get('region'), data.get('city'),
+                       data.get('profession'), data.get('approved', False))
+
 
 async def save_pending_worker(conn, worker_id, data):
     await conn.execute('''
@@ -226,11 +231,13 @@ async def save_pending_worker(conn, worker_id, data):
             phone=$2, username=$3, name=$4,
             region=$5, city=$6, profession=$7
     ''', worker_id, data.get('phone'), data.get('username'),
-         data.get('name'), data.get('region'), data.get('city'),
-         data.get('profession'))
+                       data.get('name'), data.get('region'), data.get('city'),
+                       data.get('profession'))
+
 
 async def delete_pending_worker(conn, worker_id):
     await conn.execute('DELETE FROM pending_workers WHERE worker_id=$1', worker_id)
+
 
 async def delete_worker(conn, worker_id):
     await conn.execute('''
@@ -240,7 +247,6 @@ async def delete_worker(conn, worker_id):
     ''', worker_id)
 
     await conn.execute('DELETE FROM workers WHERE worker_id=$1', worker_id)
-
 
 
 async def save_order(conn, order_id, data):
@@ -263,9 +269,10 @@ async def save_order(conn, order_id, data):
             latitude=$11, longitude=$12, chosen_worker=$13,
             media_type=$14, media_file_id=$15
     ''', order_id, data['user_id'], data.get('username'), data['name'],
-         data['region'], data['city'], data['service'], data['description'],
-         data.get('time'), data['budget'], data['location'][0], data['location'][1],
-         data.get('chosen_worker'), media_type, media_file_id)
+                       data['region'], data['city'], data['service'], data['description'],
+                       data.get('time'), data['budget'], data['location'][0], data['location'][1],
+                       data.get('chosen_worker'), media_type, media_file_id)
+
 
 async def save_pending_order(conn, order_id, data):
     media_type = None
@@ -287,9 +294,10 @@ async def save_pending_order(conn, order_id, data):
             latitude=$11, longitude=$12, chosen_worker=$13,
             media_type=$14, media_file_id=$15
     ''', order_id, data['user_id'], data.get('username'), data['name'],
-         data['region'], data['city'], data['service'], data['description'],
-         data.get('time'), data['budget'], data['location'][0], data['location'][1],
-         data.get('chosen_worker'), media_type, media_file_id)
+                       data['region'], data['city'], data['service'], data['description'],
+                       data.get('time'), data['budget'], data['location'][0], data['location'][1],
+                       data.get('chosen_worker'), media_type, media_file_id)
+
 
 async def delete_order(conn, order_id):
     await conn.execute('DELETE FROM orders WHERE order_id=$1', order_id)
@@ -318,6 +326,7 @@ async def add_blocked(conn, identifier):
             ON CONFLICT (username) DO NOTHING
         ''', username)
 
+
 async def delete_blocked(conn, identifier):
     if isinstance(identifier, int):
         await conn.execute('DELETE FROM blocked_users WHERE user_id=$1', identifier)
@@ -329,6 +338,7 @@ async def delete_blocked(conn, identifier):
 async def add_admin(conn, admin_id):
     await conn.execute('INSERT INTO admins (admin_id) VALUES ($1) ON CONFLICT DO NOTHING', admin_id)
 
+
 async def remove_admin(conn, admin_id):
     await conn.execute('DELETE FROM admins WHERE admin_id=$1', admin_id)
 
@@ -336,8 +346,10 @@ async def remove_admin(conn, admin_id):
 async def get_user(conn, user_id):
     return dict(await conn.fetchrow('SELECT * FROM users WHERE user_id=$1', user_id) or {})
 
+
 async def get_worker(conn, worker_id):
     return dict(await conn.fetchrow('SELECT * FROM workers WHERE worker_id=$1', worker_id) or {})
+
 
 async def get_order(conn, order_id):
     return dict(await conn.fetchrow('SELECT * FROM orders WHERE order_id=$1', order_id) or {})
@@ -346,11 +358,14 @@ async def get_order(conn, order_id):
 async def update_user(conn, user_id, **kwargs):
     await _update_dynamic(conn, "users", "user_id", user_id, kwargs)
 
+
 async def update_worker(conn, worker_id, **kwargs):
     await _update_dynamic(conn, "workers", "worker_id", worker_id, kwargs)
 
+
 async def update_order(conn, order_id, **kwargs):
     await _update_dynamic(conn, "orders", "order_id", order_id, kwargs)
+
 
 async def _update_dynamic(conn, table, key, key_val, fields: dict):
     if not fields:
@@ -360,6 +375,6 @@ async def _update_dynamic(conn, table, key, key_val, fields: dict):
     for i, (k, v) in enumerate(fields.items(), start=1):
         set_parts.append(f"{k}=${i}")
         values.append(v)
-    query = f"UPDATE {table} SET {', '.join(set_parts)} WHERE {key}=${len(values)+1}"
+    query = f"UPDATE {table} SET {', '.join(set_parts)} WHERE {key}=${len(values) + 1}"
     values.append(key_val)
     await conn.execute(query, *values)

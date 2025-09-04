@@ -3,7 +3,6 @@ from aiogram.types import (
     InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 )
 
-
 REGIONS = {
     # "Toshkent viloyati": ["Toshkent sh.", "Chirchiq", "Angren", "Olmaliq"],
     # "Samarqand viloyati": ["Samarqand sh", "Kattaqorgon"],
@@ -39,7 +38,6 @@ def start_keyboard():
     )
 
 
-
 def phone_request_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text="📱 Telefon raqamni yuborish", request_contact=True)]],
@@ -50,7 +48,8 @@ def phone_request_keyboard():
 def location_request_keyboard():
     kb = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📍 Hozirgi joyim", request_location=True), KeyboardButton(text="Boshqa lokatsiya yuborish")]
+            [KeyboardButton(text="📍 Hozirgi joyim", request_location=True),
+             KeyboardButton(text="Boshqa lokatsiya yuborish")]
         ],
         resize_keyboard=True
     )
@@ -137,8 +136,8 @@ def choose_time_keyboard():
         ]
     )
 
-def choose_worker_keyboard(worker_id: int, order_id: int, price: str | None = None):
 
+def choose_worker_keyboard(worker_id: int, order_id: int, price: str | None = None):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -147,7 +146,6 @@ def choose_worker_keyboard(worker_id: int, order_id: int, price: str | None = No
         ]
     )
     return keyboard
-
 
 
 def admin_worker_keyboard(worker_id: int, approved: bool):
@@ -164,6 +162,7 @@ def admin_worker_keyboard(worker_id: int, approved: bool):
 
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+
 def admin_user_keyboard(order_id: int):
     return InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -175,15 +174,18 @@ def admin_user_keyboard(order_id: int):
         ]
     ])
 
+
 def target_keyboard():
     rows = [[KeyboardButton(text="👤 Userlarga"), KeyboardButton(text="👷 Ishchilarga")]]
     rows.append([KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
+
 def filter_type_keyboard():
     rows = [[KeyboardButton(text="🌆 Viloyat bo'yicha"), KeyboardButton(text="🏙 Shahar bo'yicha")]]
     rows.append([KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
 
 def admin_keyboard():
     return ReplyKeyboardMarkup(
@@ -224,6 +226,7 @@ def edit_profile_keyboard():
 def location_button(lat: float, lon: float):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📍 Lokatsiyani ko`rish", url=f"https://www.google.com/maps/search/?api=1&query={lat}%2C{lon}")]
+            [InlineKeyboardButton(text="📍 Lokatsiyani ko`rish",
+                                  url=f"https://www.google.com/maps/search/?api=1&query={lat}%2C{lon}")]
         ]
     )

@@ -1,6 +1,7 @@
 from aiogram import BaseMiddleware
 from aiogram.types import Message, CallbackQuery
 
+
 class BlockMiddleware(BaseMiddleware):
     def __init__(self, blocked_users: set):
         super().__init__()

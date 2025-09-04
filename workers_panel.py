@@ -1,4 +1,3 @@
-
 from aiogram import Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ContentType, ReplyKeyboardMarkup, KeyboardButton
 from aiogram.fsm.context import FSMContext
@@ -11,6 +10,7 @@ from keyboards import (
 )
 from database import save_worker, delete_worker, save_offer, save_pending_worker
 
+
 class WorkerRegistration(StatesGroup):
     contact = State()
     name = State()
@@ -18,28 +18,32 @@ class WorkerRegistration(StatesGroup):
     city = State()
     profession = State()
 
+
 class WorkerEditProfile(StatesGroup):
     edit_name = State()
     edit_region = State()
     edit_city = State()
     edit_profession = State()
 
+
 class OfferStates(StatesGroup):
     waiting_price = State()
     waiting_time = State()
 
+
 def register_worker_handlers(
-    dp: Dispatcher,
-    bot,
-    admins: set[int],
-    workers_db: dict,
-    pending_workers: dict,
-    offers: dict,
-    pool
+        dp: Dispatcher,
+        bot,
+        admins: set[int],
+        workers_db: dict,
+        pending_workers: dict,
+        offers: dict,
+        pool
 ):
     async def on_worker_entry(message: Message, state: FSMContext):
         await message.answer('📱 Iltimos, telefon raqamingizni yuboring:', reply_markup=phone_request_keyboard())
         await state.set_state(WorkerRegistration.contact)
+
     dp.message.register(on_worker_entry, F.text == '🛠 Ishchi')
 
     async def on_worker_contact(message: Message, state: FSMContext):
@@ -53,6 +57,7 @@ def register_worker_handlers(
             await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('✍️ Ism va Familiyangizni yozing:', reply_markup=remove_keyboard())
         await state.set_state(WorkerRegistration.name)
+
     dp.message.register(on_worker_contact, F.content_type == ContentType.CONTACT, WorkerRegistration.contact)
 
     async def on_worker_name(message: Message, state: FSMContext):
@@ -61,6 +66,7 @@ def register_worker_handlers(
             await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('🌆 Viloyatni tanlang:', reply_markup=regions_keyboard())
         await state.set_state(WorkerRegistration.region)
+
     dp.message.register(on_worker_name, WorkerRegistration.name)
 
     async def on_worker_region(message: Message, state: FSMContext):
@@ -72,6 +78,7 @@ def register_worker_handlers(
             await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('🏙 Shaharni tanlang:', reply_markup=cities_keyboard(message.text))
         await state.set_state(WorkerRegistration.city)
+
     dp.message.register(on_worker_region, WorkerRegistration.region)
 
     async def on_worker_city(message: Message, state: FSMContext):
@@ -84,6 +91,7 @@ def register_worker_handlers(
             await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
         await message.answer('🛠 Kasbingizni tanlang:', reply_markup=services_keyboard())
         await state.set_state(WorkerRegistration.profession)
+
     dp.message.register(on_worker_city, WorkerRegistration.city)
 
     async def on_worker_profession(message: Message, state: FSMContext):
@@ -101,14 +109,15 @@ def register_worker_handlers(
             await bot.send_message(
                 admin_id,
                 f'🆕 Yangi ishchi arizasi:\n'
-                f'👤 Ismi: {data.get("name","")}\n'
-                f'📱 Telefon: {data.get("phone","")}\n'
-                f'📍 Hudud: {data.get("region","")}/{data.get("city","")}\n'
-                f'🛠 Kasb: {data.get("profession","")}\n',
+                f'👤 Ismi: {data.get("name", "")}\n'
+                f'📱 Telefon: {data.get("phone", "")}\n'
+                f'📍 Hudud: {data.get("region", "")}/{data.get("city", "")}\n'
+                f'🛠 Kasb: {data.get("profession", "")}\n',
                 reply_markup=admin_worker_keyboard(message.from_user.id, False)
             )
 
         await message.answer('👷 Ishchi paneliga xush kelibsiz!', reply_markup=worker_panel_keyboard())
+
     dp.message.register(on_worker_profession, WorkerRegistration.profession)
 
     async def on_worker_edit_profile(message: Message, state: FSMContext):
@@ -117,6 +126,7 @@ def register_worker_handlers(
             await message.answer('⚠️ Siz hali royxatdan otmagansiz')
             return
         await message.answer('✍️ Qaysi ma’lumotni ozgartirmoqchisiz?', reply_markup=edit_profile_keyboard())
+
     dp.message.register(on_worker_edit_profile, F.text == '🔧 Profilni tahrirlash')
 
     async def edit_name_handler(m: Message, state: FSMContext):
@@ -129,7 +139,8 @@ def register_worker_handlers(
 
     async def edit_city_handler(m: Message, state: FSMContext):
         await state.set_state(WorkerEditProfile.edit_city)
-        await m.answer('🏙 Yangi shaharni tanlang:', reply_markup=cities_keyboard(workers_db.get(m.from_user.id,{}).get('region')))
+        await m.answer('🏙 Yangi shaharni tanlang:',
+                       reply_markup=cities_keyboard(workers_db.get(m.from_user.id, {}).get('region')))
 
     async def edit_profession_handler(m: Message, state: FSMContext):
         await state.set_state(WorkerEditProfile.edit_profession)
@@ -146,6 +157,7 @@ def register_worker_handlers(
             await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
         await message.answer('✅ Ism yangilandi', reply_markup=worker_panel_keyboard())
         await state.clear()
+
     dp.message.register(on_worker_edit_name, WorkerEditProfile.edit_name)
 
     async def on_worker_edit_region(message: Message, state: FSMContext):
@@ -157,6 +169,7 @@ def register_worker_handlers(
             await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
         await message.answer('✅ Viloyat yangilandi', reply_markup=worker_panel_keyboard())
         await state.clear()
+
     dp.message.register(on_worker_edit_region, WorkerEditProfile.edit_region)
 
     async def on_worker_edit_city(message: Message, state: FSMContext):
@@ -169,6 +182,7 @@ def register_worker_handlers(
             await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
         await message.answer('✅ Shahar yangilandi', reply_markup=worker_panel_keyboard())
         await state.clear()
+
     dp.message.register(on_worker_edit_city, WorkerEditProfile.edit_city)
 
     async def on_worker_edit_profession(message: Message, state: FSMContext):
@@ -180,6 +194,7 @@ def register_worker_handlers(
             await save_worker(conn, message.from_user.id, workers_db[message.from_user.id])
         await message.answer('✅ Kasb yangilandi', reply_markup=worker_panel_keyboard())
         await state.clear()
+
     dp.message.register(on_worker_edit_profession, WorkerEditProfile.edit_profession)
 
     async def on_worker_delete_profile(message: Message, state: FSMContext):
@@ -193,6 +208,7 @@ def register_worker_handlers(
             await message.answer('🗑 Profilingiz ochirildi', reply_markup=markup)
         else:
             await message.answer('⚠️ Profil topilmadi')
+
     dp.message.register(on_worker_delete_profile, F.text == '🗑 Profilni ochirish')
 
     async def ask_price(callback: CallbackQuery, state: FSMContext):
@@ -248,7 +264,8 @@ def register_worker_handlers(
         offers[order_id][worker_id]['proposed_time'] = time_choice
         async with pool.acquire() as conn:
             await save_offer(conn, order_id, worker_id, proposed_time=time_choice)
-        await callback.message.answer(f'✅ Sizning {time_choice} vaqt taklifingiz saqlandi. Endi qabul qilish tugmasini bosing.')
+        await callback.message.answer(
+            f'✅ Sizning {time_choice} vaqt taklifingiz saqlandi. Endi qabul qilish tugmasini bosing.')
         await state.clear()
         await callback.answer()
 

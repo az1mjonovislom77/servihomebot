@@ -14,6 +14,7 @@ from keyboards import (
 )
 from database import save_user, save_order, update_order, save_pending_user, delete_pending_user, save_pending_order
 
+
 class UserOrder(StatesGroup):
     contact = State()
     name = State()
@@ -26,6 +27,7 @@ class UserOrder(StatesGroup):
     budget = State()
     location = State()
     confirm = State()
+
 
 class AdminFeedback(StatesGroup):
     writing = State()
@@ -47,10 +49,10 @@ def register_user_handlers(
         order_id_counter,
         pool
 ):
-
     async def on_user_entry(message: Message, state: FSMContext):
         await message.answer("📱 Iltimos, telefon raqamingizni yuboring:", reply_markup=phone_request_keyboard())
         await state.set_state(UserOrder.contact)
+
     dp.message.register(on_user_entry, F.text.in_({"/start", "👤 Foydalanuvchi"}))
 
     async def on_user_contact(message: Message, state: FSMContext):
@@ -65,12 +67,14 @@ def register_user_handlers(
             await save_pending_user(conn, message.from_user.id, pending_users[message.from_user.id])
         await message.answer("✍️ Ism-familiyangizni yozing:", reply_markup=remove_keyboard())
         await state.set_state(UserOrder.name)
+
     dp.message.register(on_user_contact, F.content_type == ContentType.CONTACT, StateFilter(UserOrder.contact))
 
     async def on_user_name(message: Message, state: FSMContext):
         await state.update_data(name=message.text.strip())
         await message.answer("🌆 Viloyatni tanlang:", reply_markup=regions_keyboard())
         await state.set_state(UserOrder.region)
+
     dp.message.register(on_user_name, StateFilter(UserOrder.name))
 
     async def on_user_region(message: Message, state: FSMContext):
@@ -91,6 +95,7 @@ def register_user_handlers(
             await save_pending_user(conn, message.from_user.id, pending_users[message.from_user.id])
         await message.answer("🏙 Shaharni tanlang:", reply_markup=cities_keyboard(message.text))
         await state.set_state(UserOrder.city)
+
     dp.message.register(on_user_region, StateFilter(UserOrder.region))
 
     async def on_user_city(message: Message, state: FSMContext):
@@ -113,6 +118,7 @@ def register_user_handlers(
             await save_pending_user(conn, message.from_user.id, pending_users[message.from_user.id])
         await message.answer("🛠 Xizmat turini tanlang:", reply_markup=services_keyboard())
         await state.set_state(UserOrder.service)
+
     dp.message.register(on_user_city, StateFilter(UserOrder.city))
 
     async def on_user_service(message: Message, state: FSMContext):
@@ -131,12 +137,14 @@ def register_user_handlers(
         await state.update_data(service=message.text)
         await message.answer("📝 Nima ish qilinishi kerakligini batafsil yozing:", reply_markup=remove_keyboard())
         await state.set_state(UserOrder.description)
+
     dp.message.register(on_user_service, StateFilter(UserOrder.service))
 
     async def on_user_description(message: Message, state: FSMContext):
         await state.update_data(description=message.text.strip())
         await message.answer("🕒Ishchi ishni qachondan boshlashi kerak?", reply_markup=choose_time_keyboard())
         await state.set_state(UserOrder.time)
+
     dp.message.register(on_user_description, StateFilter(UserOrder.description))
 
     async def on_user_time_choice(callback: CallbackQuery, state: FSMContext):
@@ -144,9 +152,11 @@ def register_user_handlers(
             return
         time_choice = callback.data.split(":")[1]
         await state.update_data(time=time_choice)
-        await callback.message.answer("📸 Rasm yoki 🎥 video yuboring (ixtiyoriy, hajmi 15 MB dan oshmasin):", reply_markup=skip_keyboard())
+        await callback.message.answer("📸 Rasm yoki 🎥 video yuboring (ixtiyoriy, hajmi 15 MB dan oshmasin):",
+                                      reply_markup=skip_keyboard())
         await state.set_state(UserOrder.media)
         await callback.answer()
+
     dp.callback_query.register(on_user_time_choice, StateFilter(UserOrder.time), F.data.startswith("time:"))
 
     MAX_FILES = 2
@@ -205,6 +215,7 @@ def register_user_handlers(
         await state.update_data(budget=int(message.text))
         await message.answer("📍 Iltimos, lokatsiyani yuboring:", reply_markup=location_request_keyboard())
         await state.set_state(UserOrder.location)
+
     dp.message.register(on_user_budget, StateFilter(UserOrder.budget))
 
     async def on_user_location(message: Message, state: FSMContext):
@@ -369,6 +380,7 @@ def register_user_handlers(
     async def stop_any(message: Message, state: FSMContext):
         await state.clear()
         await message.answer("⛔ Bekor qilindi", reply_markup=start_keyboard())
+
     dp.message.register(stop_any, F.text == "/stop")
 
     async def on_admin_action(callback: CallbackQuery, state: FSMContext):
@@ -422,7 +434,8 @@ def register_user_handlers(
                 )
                 location_markup = location_button(order["location"][0], order["location"][1])
                 action_markup = worker_actions_keyboard(order_id)
-                full_markup = InlineKeyboardMarkup(inline_keyboard=action_markup.inline_keyboard + location_markup.inline_keyboard)
+                full_markup = InlineKeyboardMarkup(
+                    inline_keyboard=action_markup.inline_keyboard + location_markup.inline_keyboard)
                 for worker_id, _w in matched_workers:
                     if order.get("media"):
                         media_list = order["media"]

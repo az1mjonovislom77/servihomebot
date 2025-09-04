@@ -1,15 +1,16 @@
-
 from aiogram.types import Message
 from aiogram import Dispatcher, types, F, Bot
 from keyboards import admin_worker_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
     REGIONS, admin_keyboard, target_keyboard, filter_type_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from database import save_worker, delete_worker, add_blocked, delete_blocked, add_admin, remove_admin, delete_pending_worker
+from database import save_worker, delete_worker, add_blocked, delete_blocked, add_admin, remove_admin, \
+    delete_pending_worker
 
 
 class FeedbackStates(StatesGroup):
     waiting_feedback = State()
+
 
 class AdminStates(StatesGroup):
     select_target = State()
@@ -21,8 +22,8 @@ class AdminStates(StatesGroup):
 
 
 async def feedback_worker_callback(
-    call: types.CallbackQuery,
-    state: FSMContext,
+        call: types.CallbackQuery,
+        state: FSMContext,
 ):
     worker_id = int(call.data.split(":")[1])
     await state.set_state(FeedbackStates.waiting_feedback)
@@ -32,12 +33,12 @@ async def feedback_worker_callback(
 
 
 async def feedback_text(
-    message: types.Message,
-    state: FSMContext,
-    workers_db: dict,
-    pending_workers: dict,
-    bot: Bot,
-    pool
+        message: types.Message,
+        state: FSMContext,
+        workers_db: dict,
+        pending_workers: dict,
+        bot: Bot,
+        pool
 ):
     data = await state.get_data()
     worker_id = data.get("worker_id")
@@ -71,17 +72,16 @@ async def feedback_text(
 
 
 def register_admin_handlers(
-    dp: Dispatcher,
-    bot: Bot,
-    admins: set[int],
-    users_db: dict,
-    pending_users: dict,
-    workers_db: dict,
-    pending_workers: dict,
-    blocked_users: set,
-    pool
+        dp: Dispatcher,
+        bot: Bot,
+        admins: set[int],
+        users_db: dict,
+        pending_users: dict,
+        workers_db: dict,
+        pending_workers: dict,
+        blocked_users: set,
+        pool
 ):
-
     dp.callback_query.register(
         feedback_worker_callback,
         F.data.startswith("feedback:")
@@ -111,7 +111,7 @@ def register_admin_handlers(
                 "👷 Ishchi ma’lumoti\n"
                 f"Foydalanuvchi: {user.username or 'username yoq'}\n"
                 f"Ismi: {data.get('name')}\n"
-                f"Telefon: {data.get('phone','N/A')}\n"
+                f"Telefon: {data.get('phone', 'N/A')}\n"
                 f"Manzil: {data.get('region')}/{data.get('city')}\n"
                 f"Kasb: {data.get('profession')}\n"
                 f"Status: {'Tasdiqlangan' if data.get('approved') else 'Tasdiqlanmagan'}"
@@ -128,7 +128,6 @@ def register_admin_handlers(
         if not users_db:
             await message.answer("👤 Userlar royxati bosh")
             return
-
 
         txt = ["👤 Userlar:"]
         for user_id, data in users_db.items():
@@ -560,7 +559,8 @@ def register_admin_handlers(
     async def broadcast_start(message: types.Message, state: FSMContext):
         if not is_admin(message):
             return
-        await message.answer("✍️ Barcha user va ishchilarga yuboriladigan habar matnini kiriting:", reply_markup=remove_keyboard())
+        await message.answer("✍️ Barcha user va ishchilarga yuboriladigan habar matnini kiriting:",
+                             reply_markup=remove_keyboard())
         await state.set_state(AdminStates.enter_global_message)
 
     async def on_enter_global_message(message: types.Message, state: FSMContext):
