@@ -64,17 +64,17 @@ async def main():
         else:
             await message.answer(
                 """
-✅ <b>Assalomu alaykum!</b> ✅
-🛠️ <b>UygaXizmatBot</b> 🛠️ ga hush kelibsiz!
+✅ Assalomu alaykum! ✅
+🛠️ UygaXizmatBot 🛠️ ga hush kelibsiz!
 
 Bu bot orqali 🏠 uydan chiqmasdan uyingizga 🛠️ ishchi chaqirishingiz 
 yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz mumkin! ✅
 
 🔹 Agar sizga xizmat ko‘rsatish uchun ishchi kerak bo‘lsa:
-👉 <b>Foydalanuvchi</b>
+👉 Foydalanuvchi
 
 🔹 Agar siz ish qidirayotgan bo‘lsangiz:
-👉 <b>Ishchi</b>
+👉 Ishchi
 """,
                 reply_markup=start_keyboard()
             )
