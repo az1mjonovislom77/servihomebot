@@ -11,7 +11,7 @@ REGIONS = {
     # "Namangan viloyati": ["Namangan sh.", "Chortoq", "Chust"],
     # "Buxoro viloyati": ["Buxoro sh.", "Kogon"],
     # "Navoiy viloyati": ["Navoiy sh.", "Zarafshon"],
-    "Qashqadaryo viloyati": ["Qarshi", "Shahrisabz"],
+    "Qashqadaryo viloyati": ["Qarshi", "Shahrisabz", "Muborak", "Mirishkor", "Kasbi", "Koson", "Nishon", "Kukdala", "G`uzor", "Qamashi", "CHiroqchi", "Kitob", "Yakkabog", "Dehqonobod"],
     # "Surxondaryo viloyati": ["Termiz", "Denov"],
     # "Xorazm viloyati": ["Urganch", "Xiva"],
     # "Qoraqalpogiston": ["Nukus", "Taxiatosh"]
