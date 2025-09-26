@@ -41,24 +41,25 @@ def register_worker_handlers(
         pool
 ):
     async def on_worker_entry(message: Message, state: FSMContext):
-        await message.answer('📱 Iltimos, telefon raqamingizni yuboring:', reply_markup=phone_request_keyboard())
-        await state.set_state(WorkerRegistration.contact)
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT phone FROM verified_users WHERE user_id=$1", message.from_user.id)
 
-    dp.message.register(on_worker_entry, F.text == '🛠 Ishchi')
-
-    async def on_worker_contact(message: Message, state: FSMContext):
-        if not message.contact:
-            await message.answer('⚠️ Tugma orqali telefon raqam yuboring', reply_markup=phone_request_keyboard())
+        if not row:
+            await message.answer("📱 Telefon raqamingiz tasdiqlanmagan. /start ni bosing va qayta urinib ko‘ring.")
             return
+
+        phone = row["phone"]
         pending_workers.setdefault(message.from_user.id, {})
-        pending_workers[message.from_user.id]['phone'] = message.contact.phone_number
-        pending_workers[message.from_user.id]['username'] = message.from_user.username
+        pending_workers[message.from_user.id]["phone"] = phone
+        pending_workers[message.from_user.id]["username"] = message.from_user.username
+
         async with pool.acquire() as conn:
             await save_pending_worker(conn, message.from_user.id, pending_workers[message.from_user.id])
-        await message.answer('✍️ Ism va Familiyangizni yozing:', reply_markup=remove_keyboard())
+
+        await message.answer("✍️ Ism va Familiyangizni yozing:", reply_markup=remove_keyboard())
         await state.set_state(WorkerRegistration.name)
 
-    dp.message.register(on_worker_contact, F.content_type == ContentType.CONTACT, WorkerRegistration.contact)
+    dp.message.register(on_worker_entry, F.text == "🛠 Ishchi")
 
     async def on_worker_name(message: Message, state: FSMContext):
         pending_workers[message.from_user.id]["name"] = message.text.strip()

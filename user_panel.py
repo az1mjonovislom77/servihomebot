@@ -50,25 +50,26 @@ def register_user_handlers(
         pool
 ):
     async def on_user_entry(message: Message, state: FSMContext):
-        await message.answer("📱 Iltimos, telefon raqamingizni yuboring:", reply_markup=phone_request_keyboard())
-        await state.set_state(UserOrder.contact)
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT phone FROM verified_users WHERE user_id=$1", message.from_user.id)
 
-    dp.message.register(on_user_entry, F.text.in_({"/start", "👤 Foydalanuvchi"}))
-
-    async def on_user_contact(message: Message, state: FSMContext):
-        if not message.contact:
-            await message.answer("⚠️ Tugma orqali telefon raqam yuboring", reply_markup=phone_request_keyboard())
+        if not row:
+            await message.answer("📱 Telefon raqamingiz tasdiqlanmagan. /start ni bosing va qayta urinib ko‘ring.")
             return
+
+        phone = row["phone"]
         pending_users[message.from_user.id] = {
-            "phone": message.contact.phone_number,
+            "phone": phone,
             "username": message.from_user.username
         }
+
         async with pool.acquire() as conn:
             await save_pending_user(conn, message.from_user.id, pending_users[message.from_user.id])
+
         await message.answer("✍️ Ism-familiyangizni yozing:", reply_markup=remove_keyboard())
         await state.set_state(UserOrder.name)
 
-    dp.message.register(on_user_contact, F.content_type == ContentType.CONTACT, StateFilter(UserOrder.contact))
+    dp.message.register(on_user_entry, F.text.in_({"/start", "👤 Foydalanuvchi"}))
 
     async def on_user_name(message: Message, state: FSMContext):
         await state.update_data(name=message.text.strip())
