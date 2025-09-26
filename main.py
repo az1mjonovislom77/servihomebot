@@ -121,22 +121,54 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
 
     dp.message.register(cmd_start, F.text == '/start')
 
+    # contact handler: code is generated and sent to all admins (not shown to user)
     async def contact_handler(message: types.Message):
         if not message.contact or not message.contact.phone_number:
             await message.answer("❌ Telefon raqami yuborilmadi. Iltimos, qayta urinib ko‘ring.")
             return
 
-        phone = message.contact.phone_number
+        raw_phone = message.contact.phone_number
+        # keep phone as-is (you can normalize if needed)
+        phone = re.sub(r"\D", "", raw_phone)
+        if phone.startswith("998") is False and phone.startswith("9"):
+            phone = "998" + phone
+        elif phone.startswith("0"):
+            phone = "998" + phone.lstrip("0")
+
         code = random.randint(1000, 9999)
         pending_codes[message.from_user.id] = {"phone": phone, "code": code}
 
-        await message.answer(
-            f"✅ Telefon raqamingiz qabul qilindi!\n"
-            f"📲 Tasdiqlash kodi: <b>{code}</b>\n\n"
-            f"❗ Kodni shu yerga yozib yuboring.",
-            parse_mode="HTML",
-            reply_markup=types.ReplyKeyboardRemove()
-        )
+        # SEND the code to all admins via bot (not to the user)
+        if not admins:
+            # No admins loaded — inform the user and keep code pending
+            await message.answer("⚠️ Hozircha adminlar topilmadi. Iltimos keyinroq urinib ko‘ring.")
+            return
+
+        sent_to = 0
+        for admin_id in list(admins):
+            try:
+                # include some user info so admin bilsin kim uchun kod
+                uname = message.from_user.username or str(message.from_user.id)
+                await bot.send_message(
+                    admin_id,
+                    f"🔔 Tasdiqlash kodi NEW for user @{uname} (id: {message.from_user.id}):\n\n"
+                    f"📲 Raqam: +{phone}\n"
+                    f"🔑 Kod: <b>{code}</b>\n\n"
+                    f"Agar bu foydalanuvchini tasdiqlamoqchi bo'lsangiz, kodni ularga bering yoki admin panel orqali tasdiqlang.",
+                    parse_mode="HTML"
+                )
+                sent_to += 1
+            except Exception as e:
+                logging.exception(f"Adminga kod yuborishda xatolik (admin={admin_id}): {e}")
+
+        if sent_to > 0:
+            # Inform user that admins received the code (do NOT display the code to the user)
+            await message.answer(
+                "✅ Sizning kod adminlarga yuborildi. Administratorlar tasdiqlagandan keyin davom etishingiz mumkin.",
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+        else:
+            await message.answer("❌ Kodni adminlarga yubora olmadik. Iltimos keyinroq urinib ko‘ring.")
 
     dp.message.register(contact_handler, F.contact)
 
