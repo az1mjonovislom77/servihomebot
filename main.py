@@ -3,21 +3,55 @@ import logging
 from itertools import count
 import asyncpg
 import os
+import random
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from middlewares import BlockMiddleware
-from keyboards import start_keyboard, admin_keyboard
+from keyboards import start_keyboard, admin_keyboard, phone_request_keyboard
 from admin import register_admin_handlers
 from user_panel import register_user_handlers
 from workers_panel import register_worker_handlers
 from database import create_tables, load_from_db
+from twilio.rest import Client
 
 API_TOKEN = '8372351670:AAH389RletRBd8eNL2v9a5-tfSF-i_4R33c'
 DSN = os.getenv("DATABASE_URL")
 
+TWILIO_SID = "AC3d49d6b7aff5423e5ad0064b8b4568b8"
+TWILIO_AUTH = "2716f1875579ffee14126b56c60b28a9"
+TWILIO_NUMBER = "+16083840892"
+twilio_client = Client(TWILIO_SID, TWILIO_AUTH)
+
 logging.basicConfig(level=logging.INFO)
 
 pool = None
+pending_codes = {}  # user_id: {"phone": str, "code": int}
+
+
+async def ensure_verification_table(conn):
+    await conn.execute("""
+                       CREATE TABLE IF NOT EXISTS verified_users
+                       (
+                           user_id
+                           BIGINT
+                           PRIMARY
+                           KEY,
+                           phone
+                           TEXT
+                       )
+                       """)
+
+
+async def is_user_verified(conn, user_id: int) -> bool:
+    row = await conn.fetchrow("SELECT 1 FROM verified_users WHERE user_id=$1", user_id)
+    return row is not None
+
+
+async def save_verified_user(conn, user_id: int, phone: str):
+    await conn.execute(
+        "INSERT INTO verified_users (user_id, phone) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING",
+        user_id, phone
+    )
 
 
 async def main():
@@ -42,6 +76,7 @@ async def main():
 
     async with pool.acquire() as conn:
         await create_tables(conn)
+        await ensure_verification_table(conn)
         await load_from_db(
             conn,
             users_db,
@@ -56,6 +91,16 @@ async def main():
         )
 
     async def cmd_start(message: types.Message):
+        async with pool.acquire() as conn:
+            verified = await is_user_verified(conn, message.from_user.id)
+
+        if not verified:
+            await message.answer(
+                "Botdan foydalanish uchun telefon raqamingizni yuboring:",
+                reply_markup=phone_request_keyboard()
+            )
+            return
+
         if message.from_user.id in admins:
             await message.answer(
                 '👮 Admin paneliga xush kelibsiz!',
@@ -80,6 +125,51 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
             )
 
     dp.message.register(cmd_start, F.text == '/start')
+
+    async def contact_handler(message: types.Message):
+        if not message.contact or not message.contact.phone_number:
+            await message.answer("❌ Telefon raqami yuborilmadi. Iltimos, qayta urinib ko‘ring.")
+            return
+
+        phone = message.contact.phone_number
+        code = random.randint(1000, 9999)
+        pending_codes[message.from_user.id] = {"phone": phone, "code": code}
+
+        try:
+            twilio_client.messages.create(
+                body=f"Sizning tasdiqlash kodingiz: {code}",
+                from_=TWILIO_NUMBER,
+                to=phone
+            )
+            await message.answer("✅ SMS yuborildi. Kodni shu yerga kiriting:", reply_markup=types.ReplyKeyboardRemove())
+        except Exception as e:
+            await message.answer(f"❌ SMS yuborishda xatolik: {e}")
+
+    dp.message.register(contact_handler, F.contact)
+
+    async def code_handler(message: types.Message):
+        if message.from_user.id not in pending_codes:
+            return
+
+        try:
+            entered = int(message.text.strip())
+        except ValueError:
+            await message.answer("❌ Faqat raqamli kod kiriting.")
+            return
+
+        correct = pending_codes[message.from_user.id]["code"]
+        phone = pending_codes[message.from_user.id]["phone"]
+
+        if entered == correct:
+            async with pool.acquire() as conn:
+                await save_verified_user(conn, message.from_user.id, phone)
+
+            del pending_codes[message.from_user.id]
+            await message.answer("✅ Telefon raqamingiz muvaffaqiyatli tasdiqlandi!", reply_markup=start_keyboard())
+        else:
+            await message.answer("❌ Noto‘g‘ri kod. Qayta urinib ko‘ring.")
+
+    dp.message.register(code_handler, F.text.regexp(r"^\d{4}$"))
 
     register_admin_handlers(
         dp=dp,
