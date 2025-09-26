@@ -5,7 +5,6 @@ import asyncpg
 import os
 import random
 import re
-import requests
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from middlewares import BlockMiddleware
@@ -17,12 +16,6 @@ from database import create_tables, load_from_db
 
 API_TOKEN = '8372351670:AAH389RletRBd8eNL2v9a5-tfSF-i_4R33c'
 DSN = os.getenv("DATABASE_URL")
-
-ESKIZ_EMAIL = "azimjonovislomjon77@gmail.com"  # sizning eskiz email
-ESKIZ_PASSWORD = "7sbAXZLjyO7KCLOn6k8ZZYboXU4XpefkAyMeHFVG"  # sizning eskiz parol
-ESKIZ_LOGIN_URL = "https://notify.eskiz.uz/api/auth/login"
-ESKIZ_SMS_URL = "https://notify.eskiz.uz/api/message/sms/send"
-ESKIZ_SENDER = "4546"  # default sender id (4546) yoki sizniki
 
 logging.basicConfig(level=logging.INFO)
 
@@ -54,51 +47,6 @@ async def save_verified_user(conn, user_id: int, phone: str):
         "INSERT INTO verified_users (user_id, phone) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING",
         user_id, phone
     )
-
-
-def get_eskiz_token():
-    if not ESKIZ_EMAIL or not ESKIZ_PASSWORD:
-        raise RuntimeError("Eskiz credentials are not set (ESKIZ_EMAIL/ESKIZ_PASSWORD).")
-    resp = requests.post(ESKIZ_LOGIN_URL, data={
-        "email": ESKIZ_EMAIL,
-        "password": ESKIZ_PASSWORD
-    }, timeout=10)
-    resp.raise_for_status()
-    data = resp.json()
-    # structure: {"status": True, "message": "...", "data": {"token": "..." } }
-    token = data.get("data", {}).get("token")
-    if not token:
-        raise RuntimeError("Eskiz token not found in response.")
-    return token
-
-
-def send_sms_eskiz(phone: str, message: str):
-    token = get_eskiz_token()
-    headers = {"Authorization": f"Bearer {token}"}
-    payload = {
-        "mobile_phone": phone,
-        "message": message,
-        "from": ESKIZ_SENDER
-    }
-    resp = requests.post(ESKIZ_SMS_URL, headers=headers, data=payload, timeout=10)
-    resp.raise_for_status()
-    return resp.json()
-
-
-def normalize_phone_for_eskiz(raw_phone: str) -> str:
-    digits = re.sub(r"\D", "", raw_phone or "")
-    if not digits:
-        return digits
-
-    if digits.startswith("998"):
-        return digits
-    if len(digits) == 9 and digits.startswith("9"):
-        return "998" + digits
-    if digits.startswith("0"):
-        stripped = digits.lstrip("0")
-        if len(stripped) >= 9:
-            return "998" + stripped
-    return digits
 
 
 async def main():
@@ -178,28 +126,17 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
             await message.answer("❌ Telefon raqami yuborilmadi. Iltimos, qayta urinib ko‘ring.")
             return
 
-        raw_phone = message.contact.phone_number
-        eskiz_phone = normalize_phone_for_eskiz(raw_phone)
-
-        if not eskiz_phone:
-            await message.answer("❌ Telefon raqami noto'g'ri formatda. Iltimos tugma orqali qayta yuboring.",
-                                 reply_markup=phone_request_keyboard())
-            return
-
+        phone = message.contact.phone_number
         code = random.randint(1000, 9999)
-        pending_codes[message.from_user.id] = {"phone": eskiz_phone, "code": code}
+        pending_codes[message.from_user.id] = {"phone": phone, "code": code}
 
-        try:
-            send_sms_eskiz(eskiz_phone, f"Sizning tasdiqlash kodingiz: {code}")
-            await message.answer("✅ SMS yuborildi. Kodni shu yerga kiriting:", reply_markup=types.ReplyKeyboardRemove())
-        except requests.HTTPError as e:
-            try:
-                err_json = e.response.json()
-            except Exception:
-                err_json = str(e)
-            await message.answer(f"❌ SMS yuborishda xatolik: {err_json}")
-        except Exception as e:
-            await message.answer(f"❌ SMS yuborishda xatolik: {e}")
+        await message.answer(
+            f"✅ Telefon raqamingiz qabul qilindi!\n"
+            f"📲 Tasdiqlash kodi: <b>{code}</b>\n\n"
+            f"❗ Kodni shu yerga yozib yuboring.",
+            parse_mode="HTML",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
 
     dp.message.register(contact_handler, F.contact)
 
