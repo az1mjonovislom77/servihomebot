@@ -154,7 +154,7 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
                     f"🔔 Tasdiqlash kodi NEW for user @{uname} (id: {message.from_user.id}):\n\n"
                     f"📲 Raqam: +{phone}\n"
                     f"🔑 Kod: <b>{code}</b>\n\n"
-                    f"Agar bu foydalanuvchini tasdiqlamoqchi bo'lsangiz, kodni ularga bering yoki admin panel orqali tasdiqlang.",
+                    f"Agar bu foydalanuvchini tasdiqlamoqchi bo'lsangiz, kodni userga ayting.",
                     parse_mode="HTML"
                 )
                 sent_to += 1
