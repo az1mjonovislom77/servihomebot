@@ -18,8 +18,8 @@ from database import create_tables, load_from_db
 API_TOKEN = '8372351670:AAH389RletRBd8eNL2v9a5-tfSF-i_4R33c'
 DSN = os.getenv("DATABASE_URL")
 
-ESKIZ_EMAIL = os.getenv("ESKIZ_EMAIL")  # sizning eskiz email
-ESKIZ_PASSWORD = os.getenv("ESKIZ_PASSWORD")  # sizning eskiz parol
+ESKIZ_EMAIL = "azimjonovislomjon77@gmail.com"  # sizning eskiz email
+ESKIZ_PASSWORD = "00777"  # sizning eskiz parol
 ESKIZ_LOGIN_URL = "https://notify.eskiz.uz/api/auth/login"
 ESKIZ_SMS_URL = "https://notify.eskiz.uz/api/message/sms/send"
 ESKIZ_SENDER = "4546"  # default sender id (4546) yoki sizniki
