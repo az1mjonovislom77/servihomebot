@@ -17,9 +17,9 @@ from twilio.rest import Client
 API_TOKEN = '8372351670:AAH389RletRBd8eNL2v9a5-tfSF-i_4R33c'
 DSN = os.getenv("DATABASE_URL")
 
-TWILIO_SID = "AC3d49d6b7aff5423e5ad0064b8b4568b8"
-TWILIO_AUTH = "2716f1875579ffee14126b56c60b28a9"
-TWILIO_NUMBER = "+16083840892"
+TWILIO_SID = os.getenv("TWILIO_SID")
+TWILIO_AUTH = os.getenv("TWILIO_AUTH")
+TWILIO_NUMBER = os.getenv("TWILIO_NUMBER")
 twilio_client = Client(TWILIO_SID, TWILIO_AUTH)
 
 logging.basicConfig(level=logging.INFO)
