@@ -5,6 +5,7 @@ import asyncpg
 import os
 import random
 import re
+import requests
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from middlewares import BlockMiddleware
@@ -13,15 +14,15 @@ from admin import register_admin_handlers
 from user_panel import register_user_handlers
 from workers_panel import register_worker_handlers
 from database import create_tables, load_from_db
-from twilio.rest import Client
 
 API_TOKEN = '8372351670:AAH389RletRBd8eNL2v9a5-tfSF-i_4R33c'
 DSN = os.getenv("DATABASE_URL")
 
-TWILIO_SID = os.getenv("TWILIO_SID")
-TWILIO_AUTH = os.getenv("TWILIO_AUTH")
-TWILIO_NUMBER = os.getenv("TWILIO_NUMBER")
-twilio_client = Client(TWILIO_SID, TWILIO_AUTH)
+ESKIZ_EMAIL = os.getenv("ESKIZ_EMAIL")  # sizning eskiz email
+ESKIZ_PASSWORD = os.getenv("ESKIZ_PASSWORD")  # sizning eskiz parol
+ESKIZ_LOGIN_URL = "https://notify.eskiz.uz/api/auth/login"
+ESKIZ_SMS_URL = "https://notify.eskiz.uz/api/message/sms/send"
+ESKIZ_SENDER = "4546"  # default sender id (4546) yoki sizniki
 
 logging.basicConfig(level=logging.INFO)
 
@@ -53,6 +54,51 @@ async def save_verified_user(conn, user_id: int, phone: str):
         "INSERT INTO verified_users (user_id, phone) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING",
         user_id, phone
     )
+
+
+def get_eskiz_token():
+    if not ESKIZ_EMAIL or not ESKIZ_PASSWORD:
+        raise RuntimeError("Eskiz credentials are not set (ESKIZ_EMAIL/ESKIZ_PASSWORD).")
+    resp = requests.post(ESKIZ_LOGIN_URL, data={
+        "email": ESKIZ_EMAIL,
+        "password": ESKIZ_PASSWORD
+    }, timeout=10)
+    resp.raise_for_status()
+    data = resp.json()
+    # structure: {"status": True, "message": "...", "data": {"token": "..." } }
+    token = data.get("data", {}).get("token")
+    if not token:
+        raise RuntimeError("Eskiz token not found in response.")
+    return token
+
+
+def send_sms_eskiz(phone: str, message: str):
+    token = get_eskiz_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {
+        "mobile_phone": phone,
+        "message": message,
+        "from": ESKIZ_SENDER
+    }
+    resp = requests.post(ESKIZ_SMS_URL, headers=headers, data=payload, timeout=10)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def normalize_phone_for_eskiz(raw_phone: str) -> str:
+    digits = re.sub(r"\D", "", raw_phone or "")
+    if not digits:
+        return digits
+
+    if digits.startswith("998"):
+        return digits
+    if len(digits) == 9 and digits.startswith("9"):
+        return "998" + digits
+    if digits.startswith("0"):
+        stripped = digits.lstrip("0")
+        if len(stripped) >= 9:
+            return "998" + stripped
+    return digits
 
 
 async def main():
@@ -97,7 +143,7 @@ async def main():
 
         if not verified:
             await message.answer(
-                "📱 Botdan foydalanish uchun telefon raqamingizni yuboring:",
+                "Botdan foydalanish uchun telefon raqamingizni yuboring:",
                 reply_markup=phone_request_keyboard()
             )
             return
@@ -129,24 +175,29 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
 
     async def contact_handler(message: types.Message):
         if not message.contact or not message.contact.phone_number:
-            await message.answer("❌ Telefon raqami yuborilmadi. Qayta urinib ko‘ring.")
+            await message.answer("❌ Telefon raqami yuborilmadi. Iltimos, qayta urinib ko‘ring.")
             return
 
         raw_phone = message.contact.phone_number
-        phone = re.sub(r"\D", "", raw_phone)
-        if not phone.startswith("+"):
-            phone = "+" + phone
+        eskiz_phone = normalize_phone_for_eskiz(raw_phone)
+
+        if not eskiz_phone:
+            await message.answer("❌ Telefon raqami noto'g'ri formatda. Iltimos tugma orqali qayta yuboring.",
+                                 reply_markup=phone_request_keyboard())
+            return
 
         code = random.randint(1000, 9999)
-        pending_codes[message.from_user.id] = {"phone": phone, "code": code}
+        pending_codes[message.from_user.id] = {"phone": eskiz_phone, "code": code}
 
         try:
-            twilio_client.messages.create(
-                body=f"Sizning tasdiqlash kodingiz: {code}",
-                from_=TWILIO_NUMBER,
-                to=phone
-            )
+            send_sms_eskiz(eskiz_phone, f"Sizning tasdiqlash kodingiz: {code}")
             await message.answer("✅ SMS yuborildi. Kodni shu yerga kiriting:", reply_markup=types.ReplyKeyboardRemove())
+        except requests.HTTPError as e:
+            try:
+                err_json = e.response.json()
+            except Exception:
+                err_json = str(e)
+            await message.answer(f"❌ SMS yuborishda xatolik: {err_json}")
         except Exception as e:
             await message.answer(f"❌ SMS yuborishda xatolik: {e}")
 
@@ -176,7 +227,6 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
 
     dp.message.register(code_handler, F.text.regexp(r"^\d{4}$"))
 
-    # qolgan handlerlar
     register_admin_handlers(
         dp=dp,
         bot=bot,
