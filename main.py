@@ -4,6 +4,7 @@ from itertools import count
 import asyncpg
 import os
 import random
+import re
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from middlewares import BlockMiddleware
@@ -96,7 +97,7 @@ async def main():
 
         if not verified:
             await message.answer(
-                "Botdan foydalanish uchun telefon raqamingizni yuboring:",
+                "📱 Botdan foydalanish uchun telefon raqamingizni yuboring:",
                 reply_markup=phone_request_keyboard()
             )
             return
@@ -128,10 +129,14 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
 
     async def contact_handler(message: types.Message):
         if not message.contact or not message.contact.phone_number:
-            await message.answer("❌ Telefon raqami yuborilmadi. Iltimos, qayta urinib ko‘ring.")
+            await message.answer("❌ Telefon raqami yuborilmadi. Qayta urinib ko‘ring.")
             return
 
-        phone = message.contact.phone_number
+        raw_phone = message.contact.phone_number
+        phone = re.sub(r"\D", "", raw_phone)
+        if not phone.startswith("+"):
+            phone = "+" + phone
+
         code = random.randint(1000, 9999)
         pending_codes[message.from_user.id] = {"phone": phone, "code": code}
 
@@ -154,7 +159,7 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
         try:
             entered = int(message.text.strip())
         except ValueError:
-            await message.answer("❌ Faqat raqamli kod kiriting.")
+            await message.answer("❌ Faqat 4 xonali kod kiriting.")
             return
 
         correct = pending_codes[message.from_user.id]["code"]
@@ -171,6 +176,7 @@ yoki uyga 🏃‍♂️ borib xizmat ko‘rsatish uchun 🛠️ ish topishingiz 
 
     dp.message.register(code_handler, F.text.regexp(r"^\d{4}$"))
 
+    # qolgan handlerlar
     register_admin_handlers(
         dp=dp,
         bot=bot,
