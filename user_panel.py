@@ -169,7 +169,7 @@ def register_user_handlers(
         if message.text == "⏭ Otkazib yuborish":
             await state.update_data(media=media_list[:MAX_FILES])
             await state.set_state(UserOrder.budget)
-            await message.answer("💵 Qancha pul berishga tayyorsiz? (faqat raqam)", reply_markup=remove_keyboard())
+            await message.answer("💵 Qancha pul berishga tayyorsiz? (faqat raqam, Masalan: 250000) ", reply_markup=remove_keyboard())
             return
 
         if len(media_list) >= MAX_FILES:
