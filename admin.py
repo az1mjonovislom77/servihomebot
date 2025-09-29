@@ -532,6 +532,10 @@ def register_admin_handlers(
         await state.set_state(AdminStates.enter_message)
 
     async def on_enter_message(message: types.Message, state: FSMContext):
+        if message.text == "❌ Bekor qilish":
+            await state.clear()
+            await message.answer("❌ Bekor qilindi", reply_markup=admin_keyboard())
+            return
         data = await state.get_data()
         target = data.get("target")
         filter_type = data.get("filter_type")
