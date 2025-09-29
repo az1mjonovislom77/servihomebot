@@ -567,8 +567,10 @@ def register_admin_handlers(
     async def broadcast_start(message: types.Message, state: FSMContext):
         if not is_admin(message):
             return
-        await message.answer("✍️ Barcha user va ishchilarga yuboriladigan habar matnini kiriting:",
-                             reply_markup=remove_keyboard())
+        await message.answer(
+            "✍️ Barcha user va ishchilarga yuboriladigan habar matnini kiriting:",
+            reply_markup=cancel_keyboard()
+        )
         await state.set_state(AdminStates.enter_global_message)
 
     async def on_enter_global_message(message: types.Message, state: FSMContext):
