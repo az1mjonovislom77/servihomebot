@@ -128,6 +128,12 @@ def register_worker_handlers(
 
     dp.message.register(on_worker_edit_profile, F.text == '🔧 Profilni tahrirlash')
 
+    async def on_worker_edit_back(message: Message, state: FSMContext):
+        await state.clear()
+        await message.answer("👷 Ishchi paneliga qaytdingiz", reply_markup=worker_panel_keyboard())
+
+    dp.message.register(on_worker_edit_back, F.text == "🔙 Orqaga")
+
     async def edit_name_handler(m: Message, state: FSMContext):
         await state.set_state(WorkerEditProfile.edit_name)
         await m.answer('✍️ Yangi ismni kiriting:')
