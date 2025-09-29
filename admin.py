@@ -1,7 +1,7 @@
 from aiogram.types import Message
 from aiogram import Dispatcher, types, F, Bot
 from keyboards import admin_worker_keyboard, remove_keyboard, cities_keyboard, regions_keyboard, \
-    REGIONS, admin_keyboard, target_keyboard, filter_type_keyboard
+    REGIONS, admin_keyboard, target_keyboard, filter_type_keyboard, cancel_keyboard
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from database import save_worker, delete_worker, add_blocked, delete_blocked, add_admin, remove_admin, \
@@ -28,7 +28,10 @@ async def feedback_worker_callback(
     worker_id = int(call.data.split(":")[1])
     await state.set_state(FeedbackStates.waiting_feedback)
     await state.update_data(worker_id=worker_id)
-    await call.message.answer("✍️ Feedback yozib yuboring (arizada xato bolsa):")
+    await call.message.answer(
+        "✍️ Feedback yozib yuboring (arizada xato bolsa):",
+        reply_markup=cancel_keyboard()
+    )
     await call.answer()
 
 
@@ -40,6 +43,11 @@ async def feedback_text(
         bot: Bot,
         pool
 ):
+    if message.text == "❌ Bekor qilish":
+        await state.clear()
+        await message.answer("❌ Bekor qilindi", reply_markup=admin_keyboard())
+        return
+
     data = await state.get_data()
     worker_id = data.get("worker_id")
     feedback_message = message.text
@@ -67,7 +75,7 @@ async def feedback_text(
             "⚠️ Ishchiga feedback yuborib bolmadi (u botni bloklagan bolishi mumkin)"
         )
 
-    await message.answer("✅ Feedback yuborildi va ariza rad etildi")
+    await message.answer("✅ Feedback yuborildi va ariza rad etildi", reply_markup=admin_keyboard())
     await state.clear()
 
 

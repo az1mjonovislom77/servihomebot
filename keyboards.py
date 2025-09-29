@@ -126,6 +126,15 @@ def worker_actions_keyboard(order_id: int):
     )
 
 
+def cancel_keyboard():
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="❌ Bekor qilish")]
+        ],
+        resize_keyboard=True
+    )
+
+
 def choose_time_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
