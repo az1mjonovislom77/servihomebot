@@ -147,7 +147,7 @@ def choose_time_keyboard():
     )
 
 
-def choose_worker_keyboard(worker_id: int, order_id: int, price: str | None = None):
+def choose_worker_keyboard(worker_id: int, order_id: int):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -186,14 +186,14 @@ def admin_user_keyboard(order_id: int):
 
 
 def target_keyboard():
-    rows = [[KeyboardButton(text="👤 Userlarga"), KeyboardButton(text="👷 Ishchilarga")]]
-    rows.append([KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")])
+    rows = [[KeyboardButton(text="👤 Userlarga"), KeyboardButton(text="👷 Ishchilarga")],
+            [KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")]]
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
 def filter_type_keyboard():
-    rows = [[KeyboardButton(text="🌆 Viloyat bo'yicha"), KeyboardButton(text="🏙 Shahar bo'yicha")]]
-    rows.append([KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")])
+    rows = [[KeyboardButton(text="🌆 Viloyat bo'yicha"), KeyboardButton(text="🏙 Shahar bo'yicha")],
+            [KeyboardButton(text="🔙 Orqaga"), KeyboardButton(text="❌ Bekor qilish")]]
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
