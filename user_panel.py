@@ -1,13 +1,13 @@
 # user_panel.py
 
 from aiogram import Dispatcher, F
-from aiogram.types import Message, CallbackQuery, ContentType, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, \
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, \
     InputMediaDocument
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.filters import StateFilter
 from keyboards import (
-    start_keyboard, phone_request_keyboard, regions_keyboard, cities_keyboard, services_keyboard,
+    start_keyboard, regions_keyboard, cities_keyboard, services_keyboard,
     location_request_keyboard, confirm_keyboard, remove_keyboard, skip_keyboard,
     REGIONS, SERVICES, worker_actions_keyboard, admin_user_keyboard, choose_worker_keyboard,
     location_button, choose_time_keyboard
@@ -169,7 +169,8 @@ def register_user_handlers(
         if message.text == "⏭ Otkazib yuborish":
             await state.update_data(media=media_list[:MAX_FILES])
             await state.set_state(UserOrder.budget)
-            await message.answer("💵 Qancha pul berishga tayyorsiz? (faqat raqam, Masalan: 250000) ", reply_markup=remove_keyboard())
+            await message.answer("💵 Qancha pul berishga tayyorsiz? (faqat raqam, Masalan: 250000) ",
+                                 reply_markup=remove_keyboard())
             return
 
         if len(media_list) >= MAX_FILES:
