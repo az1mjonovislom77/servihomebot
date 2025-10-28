@@ -414,6 +414,11 @@ def register_user_handlers(
                     await delete_pending_user(conn, user_id)
                     await conn.execute("DELETE FROM pending_orders WHERE order_id=$1", order_id)
                     await save_order(conn, order_id, order)
+
+            if order.get("sent_to_workers"):
+                await callback.answer("⚠️ Buyurtma allaqachon ishchilarga yuborilgan", show_alert=True)
+                return
+
             matched_workers = [
                 (worker_id, worker) for worker_id, worker in workers_db.items()
                 if worker.get("approved") and
@@ -474,6 +479,7 @@ def register_user_handlers(
                     else:
                         await bot.send_message(worker_id, notif_text, reply_markup=full_markup)
                 await bot.send_message(order["user_id"], "✅ Buyurtmangiz tasdiqlandi va ishchilarga yuborildi")
+            order["sent_to_workers"] = True
             await callback.answer("✅ Buyurtma ishchilarga yuborildi", show_alert=True)
 
         elif data.startswith("admin_reject"):
@@ -523,13 +529,20 @@ def register_user_handlers(
         worker_id = callback.from_user.id
 
         order = orders.get(order_id)
-        if not order or order.get("chosen_worker"):
-            await callback.answer("❌ Bu buyurtma allaqachon tanlangan", show_alert=True)
+        if not order:
+            await callback.answer("❌ Buyurtma topilmadi", show_alert=True)
+            return
+
+        if "workers_accepted" not in order:
+            order["workers_accepted"] = set()
+
+        if worker_id in order["workers_accepted"]:
+            await callback.answer("⚠️ Siz allaqachon bu buyurtmani qabul qilgansiz", show_alert=True)
             return
 
         worker = workers_db.get(worker_id)
         if not worker:
-            await callback.answer("❌ Siz royxatdan o'tmagansiz", show_alert=True)
+            await callback.answer("❌ Siz ro‘yxatdan o‘tmagansiz", show_alert=True)
             return
 
         offer = offers.get(order_id, {}).get(worker_id, {})
@@ -537,7 +550,6 @@ def register_user_handlers(
         proposed_time = offer.get('proposed_time')
         order["workers_accepted"].add(worker_id)
 
-        # Buyurtma egasiga xabar
         text = (
             f"👷 Ishchi buyurtmangizni qabul qildi!\n\n"
             f"👤 Ism: {worker['name']}\n"
@@ -554,7 +566,6 @@ def register_user_handlers(
             reply_markup=choose_worker_keyboard(worker_id, order_id, price)
         )
 
-        # Adminlarga xabar
         for admin_id in admins:
             await bot.send_message(
                 admin_id,
@@ -569,7 +580,6 @@ def register_user_handlers(
         if not callback.data.startswith("choose:"):
             return
 
-        # callback.data: "choose:worker_id:order_id:price"
         try:
             _, worker_id_str, order_id_str, price_str = callback.data.split(":")
         except ValueError:
