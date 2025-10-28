@@ -147,11 +147,14 @@ def choose_time_keyboard():
     )
 
 
-def choose_worker_keyboard(worker_id: int, order_id: int):
+def choose_worker_keyboard(worker_id: int, order_id: int, price: str):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="✅ Tanlash", callback_data=f"choose:{worker_id}:{order_id}"),
+                InlineKeyboardButton(
+                    text=f"✅ Tanlash — {price} so'm",
+                    callback_data=f"choose:{worker_id}:{order_id}:{price}",
+                ),
             ]
         ]
     )
