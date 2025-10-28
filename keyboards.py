@@ -147,7 +147,7 @@ def choose_time_keyboard():
     )
 
 
-def choose_worker_keyboard(worker_id: int, order_id: int, price):
+def choose_worker_keyboard(worker_id: int, order_id: int, price: int):
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [

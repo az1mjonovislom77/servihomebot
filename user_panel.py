@@ -518,6 +518,7 @@ def register_user_handlers(
     async def on_worker_accept(callback: CallbackQuery, state: FSMContext):
         if not callback.data.startswith("w:accept:"):
             return
+
         order_id = int(callback.data.split(":")[2])
         worker_id = callback.from_user.id
 
@@ -528,7 +529,7 @@ def register_user_handlers(
 
         worker = workers_db.get(worker_id)
         if not worker:
-            await callback.answer("❌ Siz royxatdan otmagansiz", show_alert=True)
+            await callback.answer("❌ Siz royxatdan o'tmagansiz", show_alert=True)
             return
 
         offer = offers.get(order_id, {}).get(worker_id, {})
@@ -536,6 +537,7 @@ def register_user_handlers(
         proposed_time = offer.get('proposed_time')
         order["workers_accepted"].add(worker_id)
 
+        # Buyurtma egasiga xabar
         text = (
             f"👷 Ishchi buyurtmangizni qabul qildi!\n\n"
             f"👤 Ism: {worker['name']}\n"
@@ -549,9 +551,10 @@ def register_user_handlers(
         await bot.send_message(
             order["user_id"],
             text,
-            reply_markup=choose_worker_keyboard(worker_id, order_id, str(price))
+            reply_markup=choose_worker_keyboard(worker_id, order_id, price)
         )
 
+        # Adminlarga xabar
         for admin_id in admins:
             await bot.send_message(
                 admin_id,
@@ -565,9 +568,17 @@ def register_user_handlers(
     async def on_user_choose_worker(callback: CallbackQuery, state: FSMContext):
         if not callback.data.startswith("choose:"):
             return
-        _, worker_id_str, order_id_str = callback.data.split(":")
+
+        # callback.data: "choose:worker_id:order_id:price"
+        try:
+            _, worker_id_str, order_id_str, price_str = callback.data.split(":")
+        except ValueError:
+            await callback.answer("❌ Callback ma'lumotida xatolik", show_alert=True)
+            return
+
         worker_id = int(worker_id_str)
         order_id = int(order_id_str)
+        price = int(price_str)
 
         order = orders.get(order_id)
         if not order or order.get("chosen_worker"):
@@ -593,20 +604,22 @@ def register_user_handlers(
             user_id,
             f"✅ Siz {worker['name']} ni tanladingiz!\n\n"
             f"📱 Telefon: {worker['phone']}\n"
-            f"🔗 Username: @{worker.get('username', 'yoq')}"
+            f"🔗 Username: @{worker.get('username', 'yoq')}\n"
+            f"💰 Narx: {price} som"
         )
 
         await bot.send_message(
             worker_id,
             f"✅ Sizni {order['name']} tanladi!\n\n"
             f"📱 Telefon: {user['phone']}\n"
-            f"🔗 Username: @{order.get('username', 'yoq')}"
+            f"🔗 Username: @{order.get('username', 'yoq')}\n"
+            f"💰 Narx: {price} som"
         )
 
         for admin_id in admins:
             await bot.send_message(
                 admin_id,
-                f"📢 Buyurtma #{order_id} da ishchi @{worker.get('username', 'yoq')} tanlandi"
+                f"📢 Buyurtma #{order_id} da ishchi @{worker.get('username', 'yoq')} tanlandi. Narx: {price} som"
             )
 
         await callback.answer("✅ Ishchi tanlandi")
